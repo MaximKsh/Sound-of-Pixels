@@ -1,7 +1,7 @@
 import os
 import random
 from .base import BaseDataset
-
+import matplotlib.pyplot as plt
 
 class MUSICMixDataset(BaseDataset):
     def __init__(self, list_sample, opt, **kwargs):
@@ -32,6 +32,7 @@ class MUSICMixDataset(BaseDataset):
         # select frames
         idx_margin = max(
             int(self.fps * 8), (self.num_frames // 2) * self.stride_frames)
+        
         for n, infoN in enumerate(infos):
             path_audioN, path_frameN, count_framesN = infoN
 
@@ -52,18 +53,32 @@ class MUSICMixDataset(BaseDataset):
                         '{:06d}.jpg'.format(center_frameN + idx_offset)))
             path_audios[n] = path_audioN
 
+
         # load frames and audios, STFT
         try:
             for n, infoN in enumerate(infos):
-                frames[n] = self._load_frames(path_frames[n])
+                try:
+                    frames[n] = self._load_frames(path_frames[n])
+                except Exception as e:
+                    label = 'load frame'
+                    raise e
                 # jitter audio
                 # center_timeN = (center_frames[n] - random.random()) / self.fps
                 center_timeN = (center_frames[n] - 0.5) / self.fps
-                audios[n] = self._load_audio(path_audios[n], center_timeN)
-            mag_mix, mags, phase_mix = self._mix_n_and_stft(audios)
-
+                
+                try:
+                    audios[n] = self._load_audio(path_audios[n], center_timeN)
+                except Exception as e:
+                    label = 'load audio'
+                    raise e
+            try:
+                mag_mix, mags, phase_mix = self._mix_n_and_stft(audios)
+            except Exception as e:
+                label = 'mix n and stft'
+                raise e
+            
         except Exception as e:
-            print('Failed loading frame/audio: {}'.format(e))
+            print('Failed {}: {}'.format(label, e))
             # create dummy data
             mag_mix, mags, frames, audios, phase_mix = \
                 self.dummy_mix_data(N)

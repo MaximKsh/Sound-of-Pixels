@@ -8,7 +8,7 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import scipy.io.wavfile as wavfile
-from scipy.misc import imsave
+from imageio import imwrite
 from mir_eval.separation import bss_eval_sources
 
 # Our libs
@@ -43,9 +43,9 @@ class NetWrapper(torch.nn.Module):
         if args.log_freq:
             grid_warp = torch.from_numpy(
                 warpgrid(B, 256, T, warp=True)).to(args.device)
-            mag_mix = F.grid_sample(mag_mix, grid_warp)
+            mag_mix = F.grid_sample(mag_mix, grid_warp, align_corners=True)
             for n in range(N):
-                mags[n] = F.grid_sample(mags[n], grid_warp)
+                mags[n] = F.grid_sample(mags[n], grid_warp, align_corners=True)
 
         # 0.1 calculate loss weighting coefficient: magnitude of input mixture
         if args.weighted_loss:
@@ -115,7 +115,7 @@ def calc_metrics(batch_data, outputs, args):
         if args.log_freq:
             grid_unwarp = torch.from_numpy(
                 warpgrid(B, args.stft_frame//2+1, pred_masks_[0].size(3), warp=False)).to(args.device)
-            pred_masks_linear[n] = F.grid_sample(pred_masks_[n], grid_unwarp)
+            pred_masks_linear[n] = F.grid_sample(pred_masks_[n], grid_unwarp, align_corners=True)
         else:
             pred_masks_linear[n] = pred_masks_[n]
 
@@ -191,8 +191,8 @@ def output_visuals(vis_rows, batch_data, outputs, args):
         if args.log_freq:
             grid_unwarp = torch.from_numpy(
                 warpgrid(B, args.stft_frame//2+1, gt_masks_[0].size(3), warp=False)).to(args.device)
-            pred_masks_linear[n] = F.grid_sample(pred_masks_[n], grid_unwarp)
-            gt_masks_linear[n] = F.grid_sample(gt_masks_[n], grid_unwarp)
+            pred_masks_linear[n] = F.grid_sample(pred_masks_[n], grid_unwarp, align_corners=True)
+            gt_masks_linear[n] = F.grid_sample(gt_masks_[n], grid_unwarp, align_corners=True)
         else:
             pred_masks_linear[n] = pred_masks_[n]
             gt_masks_linear[n] = gt_masks_[n]
@@ -231,8 +231,8 @@ def output_visuals(vis_rows, batch_data, outputs, args):
         filename_mixwav = os.path.join(prefix, 'mix.wav')
         filename_mixmag = os.path.join(prefix, 'mix.jpg')
         filename_weight = os.path.join(prefix, 'weight.jpg')
-        imsave(os.path.join(args.vis, filename_mixmag), mix_amp[::-1, :, :])
-        imsave(os.path.join(args.vis, filename_weight), weight[::-1, :])
+        imwrite(os.path.join(args.vis, filename_mixmag), mix_amp[::-1, :, :])
+        imwrite(os.path.join(args.vis, filename_weight), weight[::-1, :])
         wavfile.write(os.path.join(args.vis, filename_mixwav), args.audRate, mix_wav)
         row_elements += [{'text': prefix}, {'image': filename_mixmag, 'audio': filename_mixwav}]
 
@@ -250,16 +250,16 @@ def output_visuals(vis_rows, batch_data, outputs, args):
             filename_predmask = os.path.join(prefix, 'predmask{}.jpg'.format(n+1))
             gt_mask = (np.clip(gt_masks_[n][j, 0], 0, 1) * 255).astype(np.uint8)
             pred_mask = (np.clip(pred_masks_[n][j, 0], 0, 1) * 255).astype(np.uint8)
-            imsave(os.path.join(args.vis, filename_gtmask), gt_mask[::-1, :])
-            imsave(os.path.join(args.vis, filename_predmask), pred_mask[::-1, :])
+            imwrite(os.path.join(args.vis, filename_gtmask), gt_mask[::-1, :])
+            imwrite(os.path.join(args.vis, filename_predmask), pred_mask[::-1, :])
 
             # ouput spectrogram (log of magnitude, show colormap)
             filename_gtmag = os.path.join(prefix, 'gtamp{}.jpg'.format(n+1))
             filename_predmag = os.path.join(prefix, 'predamp{}.jpg'.format(n+1))
             gt_mag = magnitude2heatmap(gt_mag)
             pred_mag = magnitude2heatmap(pred_mag)
-            imsave(os.path.join(args.vis, filename_gtmag), gt_mag[::-1, :, :])
-            imsave(os.path.join(args.vis, filename_predmag), pred_mag[::-1, :, :])
+            imwrite(os.path.join(args.vis, filename_gtmag), gt_mag[::-1, :, :])
+            imwrite(os.path.join(args.vis, filename_predmag), pred_mag[::-1, :, :])
 
             # output audio
             filename_gtwav = os.path.join(prefix, 'gt{}.wav'.format(n+1))
@@ -470,26 +470,28 @@ def main(args):
     crit = builder.build_criterion(arch=args.loss)
 
     # Dataset and Loader
-    dataset_train = MUSICMixDataset(
-        args.list_train, args, split='train')
+    if args.mode == 'train':
+        dataset_train = MUSICMixDataset(
+            args.list_train, args, split='train')
+        loader_train = torch.utils.data.DataLoader(
+            dataset_train,
+            batch_size=args.batch_size,
+            shuffle=True,
+            num_workers=int(args.workers),
+            drop_last=True)
+        
+        args.epoch_iters = len(dataset_train) // args.batch_size
+        print('1 Epoch = {} iters'.format(args.epoch_iters))
+        
     dataset_val = MUSICMixDataset(
-        args.list_val, args, max_sample=args.num_val, split='val')
-
-    loader_train = torch.utils.data.DataLoader(
-        dataset_train,
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=int(args.workers),
-        drop_last=True)
+        args.list_val, args, max_sample=args.num_val, split='val')    
     loader_val = torch.utils.data.DataLoader(
         dataset_val,
         batch_size=args.batch_size,
         shuffle=False,
         num_workers=2,
         drop_last=False)
-    args.epoch_iters = len(dataset_train) // args.batch_size
-    print('1 Epoch = {} iters'.format(args.epoch_iters))
-
+    
     # Wrap networks
     netWrapper = NetWrapper(nets, crit)
     netWrapper = torch.nn.DataParallel(netWrapper, device_ids=range(args.num_gpus))
@@ -533,6 +535,7 @@ if __name__ == '__main__':
     args = parser.parse_train_arguments()
     args.batch_size = args.num_gpus * args.batch_size_per_gpu
     args.device = torch.device("cuda")
+    print(args.device)
 
     # experiment name
     if args.mode == 'train':
