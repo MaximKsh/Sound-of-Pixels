@@ -3,7 +3,7 @@ import glob
 import argparse
 import random
 import fnmatch
-
+import numpy as np
 
 def find_recursive(root_dir, ext='.mp3'):
     files = []
@@ -23,8 +23,8 @@ if __name__ == '__main__':
                         help="fps of video frames")
     parser.add_argument('--path_output', default='./data',
                         help="path to output index files")
-    parser.add_argument('--trainset_ratio', default=0.8, type=float,
-                        help="80% for training, 20% for validation")
+    parser.add_argument('--val_ratio', default=0.2, type=float)
+    parser.add_argument('--test_ratio', default=0.05, type=float)
     args = parser.parse_args()
 
     # find all audio/frames pairs
@@ -35,15 +35,35 @@ if __name__ == '__main__':
                                .replace('.mp3', '.mp4')
         frame_files = glob.glob(frame_path + '/*.jpg')
         if len(frame_files) > args.fps * 20:
-            infos.append(','.join([audio_path, frame_path, str(len(frame_files))]))
+            infos.append((audio_path, frame_path, str(len(frame_files))))
     print('{} audio/frames pairs found.'.format(len(infos)))
 
     # split train/val
-    n_train = int(len(infos) * 0.8)
+    n_val = int(len(infos) * args.val_ratio)
+    n_test = int(len(infos) * args.test_ratio) 
     random.shuffle(infos)
-    trainset = infos[0:n_train]
-    valset = infos[n_train:]
-    for name, subset in zip(['train', 'val'], [trainset, valset]):
+    
+    valset_indexes = set()
+    testset_indexes = set()
+    i = 0
+    while len(valset_indexes) < n_val and len(testset_indexes) < n_test:
+        audio_path = infos[i][0]
+        instrument = os.path.split(os.path.split(audio_path)[0])[1]
+        if ' ' in instrument and len(testset_indexes) < n_test:
+            testset_indexes.add(i)
+        if not ' ' in instrument and len(valset_indexes) < n_val:
+            valset_indexes.add(i)
+        i += 1
+        
+    infos = np.array([','.join(x) for x in infos])
+        
+    testset = infos[list(testset_indexes)]
+    valset = infos[list(valset_indexes)]
+    trainset = infos[list(set(range(len(infos))) - valset_indexes - testset_indexes)]
+    
+    # trainset = infos[0:n_train]
+    # valset = infos[n_train:]
+    for name, subset in zip(['train', 'val', 'test'], [trainset, valset, testset]):
         filename = '{}.csv'.format(os.path.join(args.path_output, name))
         with open(filename, 'w') as f:
             for item in subset:
