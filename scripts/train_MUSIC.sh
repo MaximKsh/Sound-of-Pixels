@@ -30,12 +30,12 @@ OPTS+="--audRate 11025 "
 
 # learning params
 OPTS+="--num_gpus 1 "
-OPTS+="--workers 10 "
+OPTS+="--workers 4 "
 OPTS+="--batch_size_per_gpu 20 "
 OPTS+="--lr_frame 1e-4 "
 OPTS+="--lr_sound 1e-3 "
 OPTS+="--lr_synthesizer 1e-3 "
-OPTS+="--num_epoch 50 "
+OPTS+="--num_epoch 99 "
 OPTS+="--lr_steps 40 80 "
 
 # display, viz
@@ -44,7 +44,9 @@ OPTS+="--num_vis 40 "
 OPTS+="--num_val 256 "
 
 
-OPTS+="--dup_trainset 1 "
+# OPTS+="--dup_trainset 1 "
 OPTS+="--seed 42 "
+
+OPTS+="--continue_training 1 "
 
 python3 -u main.py $OPTS

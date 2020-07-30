@@ -110,6 +110,9 @@ class ArgParser(object):
                             help='momentum for sgd, beta1 for adam')
         parser.add_argument('--weight_decay', default=1e-4, type=float,
                             help='weights regularizer')
+        
+        parser.add_argument('--continue_training', default=False, type=bool)
+        
         self.parser = parser
 
     def print_arguments(self, args):

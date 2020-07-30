@@ -413,6 +413,8 @@ def checkpoint(nets, history, epoch, args):
     suffix_latest = 'latest.pth'
     suffix_best = 'best.pth'
 
+    torch.save(epoch,
+               '{}/epoch_{}'.format(args.ckpt, suffix_latest))
     torch.save(history,
                '{}/history_{}'.format(args.ckpt, suffix_latest))
     torch.save(net_sound.state_dict(),
@@ -505,14 +507,19 @@ def main(args):
         'train': {'epoch': [], 'err': []},
         'val': {'epoch': [], 'err': [], 'sdr': [], 'sir': [], 'sar': []}}
 
+    if args.continue_training:
+        suffix_latest = 'latest.pth'
+        from_epoch = torch.load('{}/epoch_{}'.format(args.ckpt, suffix_latest))
+        history = torch.load('{}/history_{}'.format(args.ckpt, suffix_latest))
+    
     # Eval mode
-    evaluate(netWrapper, loader_val, history, 0, args)
     if args.mode == 'eval':
+        evaluate(netWrapper, loader_val, history, args.from_epoch, args)
         print('Evaluation Done!')
         return
 
     # Training loop
-    for epoch in range(1, args.num_epoch + 1):
+    for epoch in range(from_epoch, args.num_epoch + 1):
         train(netWrapper, loader_train, optimizer, history, epoch, args)
 
         # Evaluation and visualization
@@ -562,8 +569,14 @@ if __name__ == '__main__':
     # paths to save/load output
     args.ckpt = os.path.join(args.ckpt, args.id)
     args.vis = os.path.join(args.ckpt, 'visualization/')
+    args.from_epoch = 0
     if args.mode == 'train':
-        makedirs(args.ckpt, remove=True)
+        if args.continue_training:
+            args.weights_sound = os.path.join(args.ckpt, 'sound_latest.pth')
+            args.weights_frame = os.path.join(args.ckpt, 'frame_latest.pth')
+            args.weights_synthesizer = os.path.join(args.ckpt, 'synthesizer_latest.pth')
+        else:
+            makedirs(args.ckpt, remove=True)
     elif args.mode == 'eval':
         args.weights_sound = os.path.join(args.ckpt, 'sound_best.pth')
         args.weights_frame = os.path.join(args.ckpt, 'frame_best.pth')
