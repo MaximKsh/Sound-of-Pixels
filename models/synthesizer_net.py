@@ -65,6 +65,6 @@ class Bias(nn.Module):
         feats_img = feats_img.transpose(1, 2)
         feat_sound = feat_sound.view(B, C, HS * WS)
         z = torch.bmm(feats_img, feat_sound) \
-            .view(B, HI, WI, HS, WS)
+           .view(B, HI, WI, HS, WS)
         z = z + self.bias
         return z

@@ -210,8 +210,10 @@ def save_video(path, tensor, fps=25):
         path,
         fps=fps,
         shape=[H, W])
+    
     for t in range(L):
         writer.add_frame(tensor[t])
+        
     writer.release()
 
 
