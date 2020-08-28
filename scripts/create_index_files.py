@@ -46,12 +46,12 @@ if __name__ == '__main__':
     valset_indexes = set()
     testset_indexes = set()
     i = 0
-    while len(valset_indexes) < n_val and len(testset_indexes) < n_test:
+    while len(valset_indexes) < n_val or len(testset_indexes) < n_test:
         audio_path = infos[i][0]
         instrument = os.path.split(os.path.split(audio_path)[0])[1]
         if ' ' in instrument and len(testset_indexes) < n_test:
             testset_indexes.add(i)
-        if not ' ' in instrument and len(valset_indexes) < n_val:
+        if not ' ' in instrument and instrument != 'silence' and len(valset_indexes) < n_val:
             valset_indexes.add(i)
         i += 1
         

@@ -182,10 +182,6 @@ def output_visuals(vis_rows, batch_data, outputs, args):
     mag_mix_ = outputs['mag_mix']
     weight_ = outputs['weight']
     
-    print(len(gt_masks_))
-    print(gt_masks_[0].shape)
-    print(mag_mix.shape)
-
     # unwarp log scale
     N = args.num_mix
     B = mag_mix.size(0)

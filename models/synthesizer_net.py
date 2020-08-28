@@ -32,7 +32,8 @@ class InnerProd(nn.Module):
         feats_img = feats_img.view(B, C, HI*WI)
         feats_img = feats_img.transpose(1, 2)
         feat_sound = feat_sound.view(B, C, HS * WS)
-        z = torch.bmm(feats_img * self.scale, feat_sound) \
+        # => HI * WI x HS * WS => (Global AVG по HS * WS то получим где звук проявляется на картинке.
+        z = torch.bmm(feats_img * self.scale, feat_sound)\
             .view(B, HI, WI, HS, WS)
         z = z + self.bias
         return z

@@ -20,8 +20,8 @@ OPTS+="--num_mix 2 "
 OPTS+="--log_freq 1 "
 
 # frames-related
-OPTS+="--num_frames 6 "
-OPTS+="--stride_frames 8 "
+OPTS+="--num_frames 3 "
+OPTS+="--stride_frames 24 "
 OPTS+="--frameRate 8 "
 
 # audio-related
@@ -31,7 +31,7 @@ OPTS+="--audRate 11025 "
 # learning params
 OPTS+="--num_gpus 1 "
 OPTS+="--workers 4 "
-OPTS+="--batch_size_per_gpu 10 "
+OPTS+="--batch_size_per_gpu 20 "
 OPTS+="--lr_frame 1e-4 "
 OPTS+="--lr_sound 1e-3 "
 OPTS+="--lr_synthesizer 1e-3 "
@@ -40,7 +40,7 @@ OPTS+="--eval_epoch 100 "
 OPTS+="--lr_steps 4000 8000 "
 
 # display, viz
-OPTS+="--disp_iter 6 "
+OPTS+="--disp_iter 5 "
 OPTS+="--num_vis 40 "
 OPTS+="--num_val 256 "
 

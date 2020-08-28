@@ -2,7 +2,7 @@
 
 OPTS=""
 OPTS+="--mode eval "
-OPTS+="--id MUSIC-2mix-LogFreq-resnet18dilated-unet7-linear-frames3stride24-maxpool-binary-weightedLoss-channels32-epoch100-step40_80 "
+OPTS+="--id MUSIC-2mix-LogFreq-resnet18dilated-unet7-linear-frames3stride24-maxpool-binary-weightedLoss-channels32-epoch10000-step4000_8000 "
 OPTS+="--list_val data/val.csv "
 
 # Models
