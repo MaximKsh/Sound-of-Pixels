@@ -318,9 +318,9 @@ def main(args):
     
     it = iter(loader_val)
     
-    data = next(it)
-    output = netWrapper.forward(data, args)
-    output_predictions(data, output, args)
+#    data = next(it)
+#    output = netWrapper.forward(data, args)
+#    output_predictions(data, output, args)
     
 #     data = next(it)
 #     output = netWrapper.forward(data, args)
@@ -330,9 +330,9 @@ def main(args):
 #     output = netWrapper.forward(data, args)
 #     output_predictions(data, output, args)
     
-#     for data in loader_val:
-#         output = netWrapper.forward(data, args)
-#         output_predictions(data, output, args)
+    for data in loader_val:
+        output = netWrapper.forward(data, args)
+        output_predictions(data, output, args)
 
     
     
