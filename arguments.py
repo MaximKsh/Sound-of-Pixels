@@ -77,6 +77,8 @@ class ArgParser(object):
                             help='manual seed')
         parser.add_argument('--ckpt', default='./ckpt',
                             help='folder to output checkpoints')
+        parser.add_argument('--vis_dir', default='visualisation',
+                            help='folder to output visulaisation (relative to ckpt)')
         parser.add_argument('--disp_iter', type=int, default=20,
                             help='frequency to display')
         parser.add_argument('--eval_epoch', type=int, default=1,
@@ -112,6 +114,8 @@ class ArgParser(object):
                             help='weights regularizer')
         
         parser.add_argument('--continue_training', default=False, type=bool)
+        parser.add_argument('--finetune', default='', type=str)
+        parser.add_argument('--checkpoint_epoch', default=None, type=int, nargs='?')
         
         self.parser = parser
 

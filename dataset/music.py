@@ -30,12 +30,11 @@ class MUSICMixDataset(BaseDataset):
             infos[n] = self.list_sample[indexN]
 
         # select frames
-        idx_margin = max(
-            int(self.fps * 8), (self.num_frames // 2) * self.stride_frames)
+        idx_margin = max(int(self.fps * 8), (self.num_frames // 2) * self.stride_frames)
         
         for n, infoN in enumerate(infos):
             path_audioN, path_frameN, count_framesN = infoN
-
+            
             if self.split == 'train':
                 # random, not to sample start and end n-frames
                 center_frameN = random.randint(

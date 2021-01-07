@@ -426,7 +426,7 @@ def checkpoint(nets, history, epoch, args):
                '{}/synthesizer_{}'.format(args.ckpt, suffix_latest))
 
     cur_err = history['val']['err'][-1]
-    if cur_err < args.best_err:
+    if cur_err < args.best_err and epoch % args.eval_epoch == 0:
         args.best_err = cur_err
         torch.save(net_sound.state_dict(),
                    '{}/sound_{}'.format(args.ckpt, suffix_best))
@@ -434,6 +434,15 @@ def checkpoint(nets, history, epoch, args):
                    '{}/frame_{}'.format(args.ckpt, suffix_best))
         torch.save(net_synthesizer.state_dict(),
                    '{}/synthesizer_{}'.format(args.ckpt, suffix_best))
+        
+    if args.checkpoint_epoch is not None and epoch % args.checkpoint_epoch == 0:
+        torch.save(net_sound.state_dict(),
+                   '{}/sound_{}.pth'.format(args.ckpt, epoch))
+        torch.save(net_frame.state_dict(),
+                   '{}/frame_{}.pth'.format(args.ckpt, epoch))
+        torch.save(net_synthesizer.state_dict(),
+                   '{}/synthesizer_{}.pth'.format(args.ckpt, epoch))
+        
 
 
 def create_optimizer(nets, args):
@@ -469,6 +478,13 @@ def main(args):
         arch=args.arch_synthesizer,
         fc_dim=args.num_channels,
         weights=args.weights_synthesizer)
+    
+    if args.finetune != '':
+        for param in net_sound.parameters():
+            param.requires_grad = False
+        for param in net_frame.parameters():
+            param.requires_grad = False
+    
     nets = (net_sound, net_frame, net_synthesizer)
     crit = builder.build_criterion(arch=args.loss)
 
@@ -510,8 +526,12 @@ def main(args):
 
     if args.continue_training:
         suffix_latest = 'latest.pth'
-        from_epoch = torch.load('{}/epoch_{}'.format(args.ckpt, suffix_latest))
+        from_epoch = torch.load('{}/epoch_{}'.format(args.ckpt, suffix_latest)) + 1
         history = torch.load('{}/history_{}'.format(args.ckpt, suffix_latest))
+        
+        for step in args.lr_steps:
+            if step < from_epoch:
+                adjust_learning_rate(optimizer, args)
     else:
         from_epoch = 0
     
@@ -529,8 +549,8 @@ def main(args):
         if epoch % args.eval_epoch == 0:
             evaluate(netWrapper, loader_val, history, epoch, args)
 
-            # checkpointing
-            checkpoint(nets, history, epoch, args)
+        # checkpointing
+        checkpoint(nets, history, epoch, args)
 
         # drop learning rate
         if epoch in args.lr_steps:
@@ -549,11 +569,13 @@ if __name__ == '__main__':
 
     # experiment name
     if args.mode == 'train':
+        if args.finetune != '':
+            args.id += '-finetune'
         args.id += '-{}mix'.format(args.num_mix)
         if args.log_freq:
             args.id += '-LogFreq'
-        args.id += '-{}-{}-{}'.format(
-            args.arch_frame, args.arch_sound, args.arch_synthesizer)
+        args.id += '-{}{}-{}{}-{}{}'.format(
+            args.arch_frame, args.img_activation, args.arch_sound, args.sound_activation, args.arch_synthesizer, args.output_activation)
         args.id += '-frames{}stride{}'.format(args.num_frames, args.stride_frames)
         args.id += '-{}'.format(args.img_pool)
         if args.binary_mask:
@@ -571,7 +593,7 @@ if __name__ == '__main__':
 
     # paths to save/load output
     args.ckpt = os.path.join(args.ckpt, args.id)
-    args.vis = os.path.join(args.ckpt, 'visualization/')
+    args.vis = os.path.join(args.ckpt, args.vis_dir)
     args.from_epoch = 0
     if args.mode == 'train':
         if args.continue_training:
@@ -580,6 +602,11 @@ if __name__ == '__main__':
             args.weights_synthesizer = os.path.join(args.ckpt, 'synthesizer_latest.pth')
         else:
             makedirs(args.ckpt, remove=True)
+            
+            if args.finetune:
+                args.weights_sound = os.path.join(args.finetune, 'sound_latest.pth')
+                args.weights_frame = os.path.join(args.finetune, 'frame_latest.pth')
+            
     elif args.mode == 'eval':
         args.weights_sound = os.path.join(args.ckpt, 'sound_best.pth')
         args.weights_frame = os.path.join(args.ckpt, 'frame_best.pth')

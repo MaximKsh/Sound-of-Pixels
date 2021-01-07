@@ -4,7 +4,7 @@ from os import path as p
 import shutil
 import subprocess
 
-# ffmpeg -i "BhXj3rVWGZ0.mp4" -r 8  frames/out-%03d.jpg
+# ffmpeg -i "BhXj3rVWGZ0.mp4" -ar 11025 -ac 1 -f mp3 abc.mp3
 def extract_audio_ffmpeg(input_video, output_filename):
     try:
         subprocess.check_call([
@@ -41,7 +41,7 @@ def extract_audio(args):
                 output_filename = p.join(instrument_dir, clean_name) + '.mp3'
                 extract_audio_ffmpeg(p.join(root, name), output_filename)
 
-# ffmpeg -i "BhXj3rVWGZ0.mp4" -ar 11025 -ac 1 -f mp3 abc.mp3
+# ffmpeg -i "BhXj3rVWGZ0.mp4" -r 8  frames/out-%03d.jpg
 def extract_frames_ffmpeg(input_video, output_frames_path):
     try:
         subprocess.check_call([

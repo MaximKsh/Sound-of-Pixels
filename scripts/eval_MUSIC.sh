@@ -2,13 +2,15 @@
 
 OPTS=""
 OPTS+="--mode eval "
-OPTS+="--id MUSIC-2mix-LogFreq-resnet18dilated-unet7-linear-frames3stride24-maxpool-binary-weightedLoss-channels32-epoch10000-step4000_8000 "
+OPTS+="--id MUSIC-2mix-LogFreq-resnet18dilatedtanh-unet7no-linearsigmoid-frames3stride24-maxpool-binary-weightedLoss-channels32-epoch100-step40_80 "
 OPTS+="--list_val data/val.csv "
 
 # Models
 OPTS+="--arch_sound unet7 "
 OPTS+="--arch_synthesizer linear "
 OPTS+="--arch_frame resnet18dilated "
+OPTS+="--output_activation sigmoid "
+OPTS+="--img_activation tanh "
 OPTS+="--img_pool maxpool "
 OPTS+="--num_channels 32 "
 # binary mask, BCE loss, weighted loss

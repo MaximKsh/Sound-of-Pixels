@@ -102,24 +102,25 @@ class NetWrapper(torch.nn.Module):
         feat_sound = self.net_sound(log_mag_mix)
         feat_sound = activate(feat_sound, args.sound_activation)
         
-        print(feat_sound.shape)
-        print()
+        #print(feat_sound.shape)
+        #print()
         
         # 2. forward net_frame -> Bx1xC
-        print(frames[0].shape)
+        #print(frames[0].shape)
         feat_frames = self.net_frame.forward_multiframe(frames[0], pool=False)
         
         #feat_frames = torch.max(feat_frames, dim=2)[0]
-        print(feat_frames.shape)
+        #print(feat_frames.shape)
         (B, C, T, H, W) = feat_frames.size()
         feat_frames = feat_frames.permute(0, 1, 3, 4, 2)
         feat_frames = feat_frames.view(B*C, H*W, T)
         feat_frames = F.adaptive_avg_pool1d(feat_frames, 1)
         feat_frames = feat_frames.view(B, C, H, W)
         
-        print(feat_frames.shape)
+        #print(feat_frames.shape)
         feat_frames = activate(feat_frames, args.img_activation)
-        print(feat_frames.shape)
+        #print(feat_frames.shape)
+        # feat_frames[:, 13, :, :] = 0
         
         
 #         feat_frames1 = feat_frames[0, 10, :, :]
@@ -127,11 +128,15 @@ class NetWrapper(torch.nn.Module):
 #         feat_frames[0, 10, :, :] = feat_frames1
             
         channels = feat_frames.detach().cpu().numpy()
+        #print(channels)
+        #print(channels.shape)
+        #print(self.net_synthesizer.scale)
+        #print(feat_sound.mean(axis=3).mean(axis=2))
         
         # 3. sound synthesizer
         pred_masks = self.net_synthesizer.forward_pixelwise(feat_frames, feat_sound)
         pred_masks = activate(pred_masks, args.output_activation)
-        print(pred_masks.shape)
+        # print(pred_masks.shape)
 
         return {'pred_masks': pred_masks, 'processed_mag_mix': mag_mix, 'feat_frames_channels': channels}
 
@@ -157,10 +162,10 @@ def output_predictions(data, outputs, args):
     channels_ = outputs['feat_frames_channels']
     #pred_masks_ = pred_masks_[0]
     
-    print('pred_masks', pred_masks_.shape)
-    print('mag_mix', mag_mix.shape)
+    #print('pred_masks', pred_masks_.shape)
+    ##print('mag_mix', mag_mix.shape)
     
-    print(infos)
+    #print(infos)
     N = args.num_mix
     B = mag_mix.size(0)
     grid_unwarp = torch.from_numpy(warpgrid(B, args.stft_frame//2+1, pred_masks_.size(4), warp=False)).to(args.device)
@@ -249,7 +254,8 @@ def output_predictions(data, outputs, args):
         text_file.write(sbr_html)
     
     # RBS
-    channels_ = (np.clip(channels_, 0, 1) * 255).astype(np.uint8)
+    
+    channels_ = ((np.clip(channels_, -1, 1) + 1) / 2 * 255).astype(np.uint8)
     # channels_[j][channels_[j] < .5] = 0
     all_channels = np.max(channels_[j], axis=0)
     
@@ -257,13 +263,13 @@ def output_predictions(data, outputs, args):
     plt.subplot(5, 8, 1)
     plt.axis('off')
     plt.title('max')
-    plt.imshow(all_channels, cmap='gray')
+    plt.imshow(all_channels, cmap='RdYlGn')
     
     for i in range(32):
         plt.subplot(5, 8, 9 + i)
         plt.axis('off')
         plt.title(str(i))
-        plt.imshow(channels_[j, i], cmap='gray')
+        plt.imshow(channels_[j, i], cmap='RdYlGn')
     
     plt.savefig(os.path.join(rbs_folder, f'channels.jpg'))
     
@@ -272,14 +278,14 @@ def output_predictions(data, outputs, args):
     plt.axis('off')
     plt.title('all')
     plt.imshow(frames_tensor[0])
-    plt.imshow(zoom(all_channels, 224/14), alpha=0.7, cmap='gray')
+    plt.imshow(zoom(all_channels, 224/14), alpha=0.7, cmap='RdYlGn')
     
     for i in range(32):
         plt.subplot(5, 8, 9 + i)
         plt.axis('off')
         plt.title(str(i))
         plt.imshow(frames_tensor[0])
-        plt.imshow(zoom(channels_[j, i], 224/14), alpha=0.7, cmap='gray')
+        plt.imshow(zoom(channels_[j, i], 224/14), alpha=0.7, cmap='RdYlGn')
     
     plt.savefig(os.path.join(rbs_folder, f'frames_channels.jpg'))
     
@@ -309,30 +315,21 @@ def main(args):
     
     dataset = MUSICMixDataset(
         args.list_val, args, max_sample=args.num_val, split='val')
+    
     loader_val = torch.utils.data.DataLoader(
-        dataset, batch_size=1, shuffle=False, num_workers=1, drop_last=False)
+        dataset, batch_size=1, shuffle=True, num_workers=4, drop_last=False)
     
     netWrapper = NetWrapper(nets)
     netWrapper.eval()
     netWrapper.to(args.device)
     
-    it = iter(loader_val)
-    
-#    data = next(it)
-#    output = netWrapper.forward(data, args)
-#    output_predictions(data, output, args)
-    
-#     data = next(it)
-#     output = netWrapper.forward(data, args)
-#     output_predictions(data, output, args)
-    
-#     data = next(it)
-#     output = netWrapper.forward(data, args)
-#     output_predictions(data, output, args)
-    
+    cnt = 0
     for data in loader_val:
         output = netWrapper.forward(data, args)
         output_predictions(data, output, args)
+        if cnt == 50:
+            break
+        cnt += 1
 
     
     
@@ -346,10 +343,10 @@ if __name__ == '__main__':
     
     # paths to save/load output
     args.ckpt = os.path.join(args.ckpt, args.id)
-    args.vis = os.path.join(args.ckpt, 'test_visualization/')
-    args.weights_sound = os.path.join(args.ckpt, 'sound_best.pth')
-    args.weights_frame = os.path.join(args.ckpt, 'frame_best.pth')
-    args.weights_synthesizer = os.path.join(args.ckpt, 'synthesizer_best.pth')
+    args.vis = os.path.join(args.ckpt, args.vis_dir)
+    args.weights_sound = os.path.join(args.ckpt, 'sound_latest.pth')
+    args.weights_frame = os.path.join(args.ckpt, 'frame_latest.pth')
+    args.weights_synthesizer = os.path.join(args.ckpt, 'synthesizer_latest.pth')
   
     random.seed(args.seed)
     torch.manual_seed(args.seed)

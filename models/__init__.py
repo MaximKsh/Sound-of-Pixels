@@ -16,7 +16,9 @@ def activate(x, activation):
     elif activation == 'relu':
         return F.relu(x)
     elif activation == 'tanh':
-        return F.tanh(x)
+        return torch.tanh(x)
+    elif activation == 'abstanh':
+        return torch.abs(torch.tanh(x))
     elif activation == 'no':
         return x
     else:
