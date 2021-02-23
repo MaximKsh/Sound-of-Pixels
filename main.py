@@ -21,7 +21,6 @@ from utils import AverageMeter, \
     combine_video_audio, save_video, makedirs
 from viz import plot_loss_metrics, HTMLVisualizer
 
-
 # Network wrapper, defines forward pass
 class NetWrapper(torch.nn.Module):
     def __init__(self, nets, crit):
@@ -559,6 +558,28 @@ def main(args):
     print('Training Done!')
 
 
+def format_model_id(args):
+    if args.finetune != '':
+        args.id += '-finetune'
+    args.id += '-{}mix'.format(args.num_mix)
+    if args.log_freq:
+        args.id += '-LogFreq'
+    args.id += '-{}{}-{}{}-{}{}'.format(
+        args.arch_frame, args.img_activation, args.arch_sound, args.sound_activation, args.arch_synthesizer, args.output_activation)
+    args.id += '-frames{}stride{}'.format(args.num_frames, args.stride_frames)
+    args.id += '-{}'.format(args.img_pool)
+    if args.binary_mask:
+        assert args.loss == 'bce', 'Binary Mask should go with BCE loss'
+        args.id += '-binary'
+    else:
+        args.id += '-ratio'
+    if args.weighted_loss:
+        args.id += '-weightedLoss'
+    args.id += '-channels{}'.format(args.num_channels)
+    args.id += '-epoch{}'.format(args.num_epoch)
+    args.id += '-step' + '_'.join([str(x) for x in args.lr_steps])
+    
+    
 if __name__ == '__main__':
     # arguments
     parser = ArgParser()
@@ -569,25 +590,7 @@ if __name__ == '__main__':
 
     # experiment name
     if args.mode == 'train':
-        if args.finetune != '':
-            args.id += '-finetune'
-        args.id += '-{}mix'.format(args.num_mix)
-        if args.log_freq:
-            args.id += '-LogFreq'
-        args.id += '-{}{}-{}{}-{}{}'.format(
-            args.arch_frame, args.img_activation, args.arch_sound, args.sound_activation, args.arch_synthesizer, args.output_activation)
-        args.id += '-frames{}stride{}'.format(args.num_frames, args.stride_frames)
-        args.id += '-{}'.format(args.img_pool)
-        if args.binary_mask:
-            assert args.loss == 'bce', 'Binary Mask should go with BCE loss'
-            args.id += '-binary'
-        else:
-            args.id += '-ratio'
-        if args.weighted_loss:
-            args.id += '-weightedLoss'
-        args.id += '-channels{}'.format(args.num_channels)
-        args.id += '-epoch{}'.format(args.num_epoch)
-        args.id += '-step' + '_'.join([str(x) for x in args.lr_steps])
+        format_model_id(args)
 
     print('Model ID: {}'.format(args.id))
 
