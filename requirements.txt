@@ -30,10 +30,10 @@ scipy==1.6.1
 six==1.15.0
 SoundFile==0.10.3.post1
 threadpoolctl==2.1.0
-torch==1.8.0
-torchaudio==0.8.0
+torch==1.7.1
+torchaudio==0.7.2
 torchsummary==1.5.1
-torchvision==0.9.0
+torchvision==0.8.2
 typing-extensions==3.7.4.3
 urllib3==1.26.3
 youtube-dl==2021.3.3
