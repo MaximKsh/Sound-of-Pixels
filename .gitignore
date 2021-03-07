@@ -1,6 +1,8 @@
 *.pyc
 *.log
 __pycache__
+.python-version
+.idea/
 
 ckpt/
 data/
