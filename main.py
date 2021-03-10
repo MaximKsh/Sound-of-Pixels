@@ -191,7 +191,7 @@ def output_visuals(vis_rows, batch_data, outputs, args):
         if args.log_freq:
             grid_unwarp = torch.from_numpy(
                 warpgrid(B, args.stft_frame//2+1, gt_masks_[0].size(3), warp=False)).to(args.device)
-            print(grid_unwarp.shape, pred_masks_[n].shape)
+            # print(grid_unwarp.shape, pred_masks_[n].shape)
             pred_masks_linear[n] = F.grid_sample(pred_masks_[n], grid_unwarp, align_corners=True)
             gt_masks_linear[n] = F.grid_sample(gt_masks_[n], grid_unwarp, align_corners=True)
         else:

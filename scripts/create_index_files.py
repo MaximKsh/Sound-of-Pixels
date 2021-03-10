@@ -65,9 +65,7 @@ if __name__ == '__main__':
     random.shuffle(testset)
     random.shuffle(valset)
     random.shuffle(trainset)
-    
-    # trainset = infos[0:n_train]
-    # valset = infos[n_train:]
+
     for name, subset in zip(['train', 'val', 'test'], [trainset, valset, testset]):
         filename = '{}.csv'.format(os.path.join(args.path_output, name))
         with open(filename, 'w') as f:
