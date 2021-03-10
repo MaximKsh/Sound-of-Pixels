@@ -1,14 +1,19 @@
 # Sound-of-Pixels
-Codebase for ECCV18 "The Sound of Pixels".
 
-*This repository is under construction, but the core parts are already there.
 
-<img src="./teaser.png"/>
+## Requirements and installation
+Python: 3.8.7, CUDA: 11.0
 
-## Environment
-The code is developed under the following configurations.
-- Hardware: 1-4 GPUs (change ```[--num_gpus NUM_GPUS]``` accordingly)
-- Software: Ubuntu 16.04.3 LTS, ***CUDA>=8.0, Python>=3.5, PyTorch>=0.4.0***
+Install requirements CPU only:
+```
+python3 -m pip install -r requirements.txt
+```
+
+Install requirements GPU:
+```
+python3 -m pip install -r requirements-gpu.txt -f https://download.pytorch.org/whl/torch_stable.html
+```
+
 
 ## Training
 1. Prepare video dataset.

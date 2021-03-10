@@ -16,11 +16,12 @@ class BaseLoss(nn.Module):
             errs = [self._forward(preds[n], targets[n], weight)
                     for n in range(N)]
             err = torch.mean(torch.stack(errs))
-
         elif isinstance(preds, torch.Tensor):
             if weight is None:
                 weight = preds.new_ones(1)
             err = self._forward(preds, targets, weight)
+        else:
+            raise ValueError("err must be list or Tensor")
 
         return err
 

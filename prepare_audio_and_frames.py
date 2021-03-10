@@ -4,6 +4,7 @@ from os import path as p
 import shutil
 import subprocess
 
+
 # ffmpeg -i "BhXj3rVWGZ0.mp4" -ar 11025 -ac 1 -f mp3 abc.mp3
 def extract_audio_ffmpeg(input_video, output_filename):
     try:
@@ -14,12 +15,14 @@ def extract_audio_ffmpeg(input_video, output_filename):
     except Exception as ex:
         print(ex)
 
+
 def ensure_empty_dir(args, required_dir):
     path = p.join(args.data_path, required_dir)
     if p.exists(path):
         shutil.rmtree(path)
     os.mkdir(path)
     return path
+
 
 def extract_audio(args):
     print('Preparing audio dir...')
@@ -41,6 +44,7 @@ def extract_audio(args):
                 output_filename = p.join(instrument_dir, clean_name) + '.mp3'
                 extract_audio_ffmpeg(p.join(root, name), output_filename)
 
+
 # ffmpeg -i "BhXj3rVWGZ0.mp4" -r 8  frames/out-%03d.jpg
 def extract_frames_ffmpeg(input_video, output_frames_path):
     try:
@@ -49,6 +53,7 @@ def extract_frames_ffmpeg(input_video, output_frames_path):
             '-r', '8', p.join(output_frames_path, '%06d.jpg')])
     except Exception as ex:
         print(ex)
+
 
 def extract_frames(args):
     print('Preparing frames dir')
@@ -79,7 +84,3 @@ if __name__ == '__main__':
 
     extract_frames(args)
     extract_audio(args)
-    
-    
-    
-     
