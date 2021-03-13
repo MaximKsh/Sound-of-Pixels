@@ -1,7 +1,6 @@
 # System libs
 import os
 import random
-import time
 
 # Numerical libs
 import torch
@@ -9,8 +8,6 @@ import torch.nn.functional as F
 import numpy as np
 import scipy.io.wavfile as wavfile
 from imageio import imwrite
-from mir_eval.separation import bss_eval_sources
-from torchsummary import summary
 import matplotlib.pyplot as plt
 from scipy.ndimage import zoom
 
@@ -18,10 +15,9 @@ from scipy.ndimage import zoom
 from arguments import ArgParser
 from dataset import MUSICMixDataset
 from models import ModelBuilder, activate
-from utils import AverageMeter, \
-    recover_rgb, magnitude2heatmap,\
+from helpers.utils import recover_rgb, magnitude2heatmap,\
     istft_reconstruction, warpgrid, \
-    combine_video_audio, save_video, makedirs
+    makedirs
 
 sbr_html = """
 <html>

@@ -11,8 +11,8 @@ from pathlib import Path
 def find_recursive(root_dir, ext='.mp3'):
     files = []
     for root, dirnames, filenames in os.walk(root_dir):
-        for filename in fnmatch.filter(filenames, '*' + ext):
-            files.append(os.path.join(root, filename))
+        for fname in fnmatch.filter(filenames, '*' + ext):
+            files.append(os.path.join(root, fname))
     return files
 
 

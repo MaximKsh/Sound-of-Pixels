@@ -26,7 +26,7 @@ def plot_loss_metrics(path, history):
     plt.close('all')
 
 
-class HTMLVisualizer():
+class HTMLVisualizer:
     def __init__(self, fn_html):
         self.fn_html = fn_html
         self.content = '<table>'
