@@ -4,6 +4,7 @@ import shutil
 import json
 import argparse
 
+
 def download_video(videos, output_path):
     ydl_opts = {
         'outtmpl': f'{output_path}/%(id)s.%(ext)s',
@@ -18,6 +19,7 @@ def download_video(videos, output_path):
 
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         ydl.download(videos)
+
 
 def download_dataset(args):
     for group in groups:
@@ -34,6 +36,7 @@ def download_dataset(args):
             files = metainfo['videos'][category]
             download_video(files, output_dir)
 
+
 def get_groups(metadata_path):
     groups = []
     for filename in os.listdir(metadata_path):
@@ -42,6 +45,7 @@ def get_groups(metadata_path):
             if ext == '.json':
                 groups.append(filename_without_ext)
     return groups
+
 
 def clear_output(output_path):
     if os.path.exists(output_path):

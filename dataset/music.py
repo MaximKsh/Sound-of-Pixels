@@ -1,7 +1,7 @@
 import os
 import random
 from .base import BaseDataset
-import matplotlib.pyplot as plt
+
 
 class MUSICMixDataset(BaseDataset):
     def __init__(self, list_sample, opt, **kwargs):
@@ -12,12 +12,12 @@ class MUSICMixDataset(BaseDataset):
 
     def __getitem__(self, index):
         N = self.num_mix
-        frames = [None for n in range(N)]
-        audios = [None for n in range(N)]
-        infos = [[] for n in range(N)]
-        path_frames = [[] for n in range(N)]
-        path_audios = ['' for n in range(N)]
-        center_frames = [0 for n in range(N)]
+        frames = [None for _ in range(N)]
+        audios = [None for _ in range(N)]
+        infos = [[] for _ in range(N)]
+        path_frames = [[] for _ in range(N)]
+        path_audios = ['' for _ in range(N)]
+        center_frames = [0 for _ in range(N)]
 
         # the first video
         infos[0] = self.list_sample[index]

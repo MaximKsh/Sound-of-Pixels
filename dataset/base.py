@@ -64,6 +64,9 @@ class BaseDataset(torchdata.Dataset):
     def __len__(self):
         return len(self.list_sample)
 
+    def __getitem__(self, index):
+        raise NotImplementedError()
+
     # video transform funcs
     def _init_vtransform(self):
         transform_list = []

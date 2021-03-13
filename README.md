@@ -15,6 +15,32 @@ python3 -m pip install -r requirements-gpu.txt -f https://download.pytorch.org/w
 ```
 
 
+## Data collection and preprocessing
+
+Data downloading and preprocessing will be described later...
+
+Links with preprocessed data:
+* MUSIC:
+* VGGSound: 
+
+## Indexing dataset
+
+Training process requires input data described in csv format:
+```
+ ./data/audio/acoustic_guitar/M3dekVSwNjY.mp3,./data/frames/acoustic_guitar/M3dekVSwNjY.mp4,1580
+ ./data/audio/trumpet/STKXyBGSGyE.mp3,./data/frames/trumpet/STKXyBGSGyE.mp4,493
+```
+You can generate that files using create_index_files.py (run it from repository root):
+* MUSIC:
+```
+python3 preprocessing/create_index_files.py <path-to-dataset>/sop-data/solo21+duet+silence music 
+```
+* VGGSound 
+```
+python3 preprocessing/create_index_files.py <path-to-dataset>/vggsound vggsound --min_frames=0 
+```
+
+
 ## Training
 1. Prepare video dataset.
 
