@@ -48,7 +48,7 @@ if __name__ == '__main__':
     print('Matching frames...')
     for audio_path in tqdm(audio_files):
         frame_path = audio_path.replace(root_audio, root_frame) \
-            .replace('.mp3', '.mp4')
+            .replace('.mp3', '')
         frame_files = glob.glob(frame_path + '/*.jpg')
         if args.min_frames == 0 or len(frame_files) > args.min_frames:
             infos.append((f'"{audio_path}"', f'"{frame_path}"', str(len(frame_files))))
