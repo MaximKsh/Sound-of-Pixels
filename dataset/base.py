@@ -12,27 +12,25 @@ from . import video_transforms as vtransforms
 
 
 class BaseDataset(torchdata.Dataset):
-    def __init__(self, list_sample, opt, max_sample=-1, split='train'):
+    def __init__(self, list_sample, config, max_sample=-1, split='train'):
         # params
-        self.num_frames = opt.num_frames
-        self.stride_frames = opt.stride_frames
-        self.frameRate = opt.frameRate
-        self.imgSize = opt.imgSize
-        self.audRate = opt.audRate
-        self.audLen = opt.audLen
-        self.audSec = 1. * self.audLen / self.audRate
-        self.binary_mask = opt.binary_mask
+        self.num_frames = config['num_frames']
+        self.stride_frames = config['stride_frames']
+        self.frame_rate = config['frame_rate']
+        self.img_size = config['img_size']
+        self.aud_rate = config['aud_rate']
+        self.aud_len = config['aud_len']
+        self.aud_sec = 1. * self.aud_len / self.aud_rate
+        self.binary_mask = config['binary_mask']
 
         # STFT params
-        self.log_freq = opt.log_freq
-        self.stft_frame = opt.stft_frame
-        self.stft_hop = opt.stft_hop
-        self.HS = opt.stft_frame // 2 + 1
-        self.WS = (self.audLen + 1) // self.stft_hop
+        self.log_freq = config['log_freq']
+        self.stft_frame = config['stft_frame']
+        self.stft_hop = config['stft_hop']
+        self.HS = config['stft_frame'] // 2 + 1
+        self.WS = (self.aud_len + 1) // self.stft_hop
 
         self.split = split
-        self.seed = opt.seed
-        random.seed(self.seed)
 
         # initialize video transform
         self._init_vtransform()
@@ -41,17 +39,18 @@ class BaseDataset(torchdata.Dataset):
         if isinstance(list_sample, str):
             # self.list_sample = [x.rstrip() for x in open(list_sample, 'r')]
             self.list_sample = []
-            for row in csv.reader(open(list_sample, 'r'), delimiter=','):
-                if len(row) < 2:
-                    continue
-                self.list_sample.append(row)
+            with open(list_sample, 'r') as f:
+                for row in csv.reader(f, delimiter=','):
+                    if len(row) < 2:
+                        continue
+                    self.list_sample.append(row)
         elif isinstance(list_sample, list):
             self.list_sample = list_sample
         else:
-            raise('Error list_sample!')
+            raise RuntimeError('Error list_sample!')
 
         if self.split == 'train':
-            self.list_sample *= opt.dup_trainset
+            self.list_sample *= config['dup_trainset']
             random.shuffle(self.list_sample)
 
         if max_sample > 0:
@@ -74,12 +73,12 @@ class BaseDataset(torchdata.Dataset):
         std = [0.229, 0.224, 0.225]
 
         if self.split == 'train':
-            transform_list.append(vtransforms.Resize(int(self.imgSize * 1.1), Image.BICUBIC))
-            transform_list.append(vtransforms.RandomCrop(self.imgSize))
+            transform_list.append(vtransforms.Resize(int(self.img_size * 1.1), Image.BICUBIC))
+            transform_list.append(vtransforms.RandomCrop(self.img_size))
             transform_list.append(vtransforms.RandomHorizontalFlip())
         else:
-            transform_list.append(vtransforms.Resize(self.imgSize, Image.BICUBIC))
-            transform_list.append(vtransforms.CenterCrop(self.imgSize))
+            transform_list.append(vtransforms.Resize(self.img_size, Image.BICUBIC))
+            transform_list.append(vtransforms.CenterCrop(self.img_size))
 
         transform_list.append(vtransforms.ToTensor())
         transform_list.append(vtransforms.Normalize(mean, std))
@@ -93,15 +92,15 @@ class BaseDataset(torchdata.Dataset):
 
         if self.split == 'train':
             self.img_transform = transforms.Compose([
-                transforms.Scale(int(self.imgSize * 1.2)),
-                transforms.RandomCrop(self.imgSize),
+                transforms.Scale(int(self.img_size * 1.2)),
+                transforms.RandomCrop(self.img_size),
                 transforms.RandomHorizontalFlip(),
                 transforms.ToTensor(),
                 transforms.Normalize(mean, std)])
         else:
             self.img_transform = transforms.Compose([
-                transforms.Scale(self.imgSize),
-                transforms.CenterCrop(self.imgSize),
+                transforms.Scale(self.img_size),
+                transforms.CenterCrop(self.img_size),
                 transforms.ToTensor(),
                 transforms.Normalize(mean, std)])
 
@@ -142,7 +141,7 @@ class BaseDataset(torchdata.Dataset):
         return audio_raw, rate
 
     def _load_audio(self, path, center_timestamp, nearest_resample=False):
-        audio = np.zeros(self.audLen, dtype=np.float32)
+        audio = np.zeros(self.aud_len, dtype=np.float32)
         # silent
         if path.endswith('silent'):
             return audio
@@ -151,25 +150,25 @@ class BaseDataset(torchdata.Dataset):
         audio_raw, rate = self._load_audio_file(path)
 
         # repeat if audio is too short
-        if audio_raw.shape[0] < rate * self.audSec:
-            n = int(rate * self.audSec / audio_raw.shape[0]) + 1
+        if audio_raw.shape[0] < rate * self.aud_sec:
+            n = int(rate * self.aud_sec / audio_raw.shape[0]) + 1
             audio_raw = np.tile(audio_raw, n)
 
         # resample
-        if rate > self.audRate:
-            print('resmaple {}->{}'.format(rate, self.audRate))
+        if rate > self.aud_rate:
+            print('resmaple {}->{}'.format(rate, self.aud_rate))
             if nearest_resample:
-                audio_raw = audio_raw[::rate//self.audRate]
+                audio_raw = audio_raw[::rate//self.aud_rate]
             else:
-                audio_raw = librosa.resample(audio_raw, rate, self.audRate)
+                audio_raw = librosa.resample(audio_raw, rate, self.aud_rate)
 
         # crop N seconds
         len_raw = audio_raw.shape[0]
-        center = int(center_timestamp * self.audRate)
-        start = max(0, center - self.audLen // 2)
-        end = min(len_raw, center + self.audLen // 2)
+        center = int(center_timestamp * self.aud_rate)
+        start = max(0, center - self.aud_len // 2)
+        end = min(len_raw, center + self.aud_len // 2)
 
-        audio[self.audLen//2-(center-start): self.audLen//2+(end-center)] = \
+        audio[self.aud_len // 2 - (center - start): self.aud_len // 2 + (end - center)] = \
             audio_raw[start:end]
 
         # randomize volume
@@ -213,8 +212,8 @@ class BaseDataset(torchdata.Dataset):
 
         for n in range(N):
             frames[n] = torch.zeros(
-                3, self.num_frames, self.imgSize, self.imgSize)
-            audios[n] = torch.zeros(self.audLen)
+                3, self.num_frames, self.img_size, self.img_size)
+            audios[n] = torch.zeros(self.aud_len)
             mags[n] = torch.zeros(1, self.HS, self.WS)
 
         return amp_mix, mags, frames, audios, phase_mix

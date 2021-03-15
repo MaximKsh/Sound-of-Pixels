@@ -4,11 +4,11 @@ from .base import BaseDataset
 
 
 class MUSICMixDataset(BaseDataset):
-    def __init__(self, list_sample, opt, **kwargs):
+    def __init__(self, list_sample, config, **kwargs):
         super(MUSICMixDataset, self).__init__(
-            list_sample, opt, **kwargs)
-        self.fps = opt.frameRate
-        self.num_mix = opt.num_mix
+            list_sample, config, **kwargs)
+        self.fps = config['frame_rate']
+        self.num_mix = config['num_mix']
 
     def __getitem__(self, index):
         N = self.num_mix
@@ -23,8 +23,6 @@ class MUSICMixDataset(BaseDataset):
         infos[0] = self.list_sample[index]
 
         # sample other videos
-        if not self.split == 'train':
-            random.seed(index)
         for n in range(1, N):
             indexN = random.randint(0, len(self.list_sample)-1)
             infos[n] = self.list_sample[indexN]

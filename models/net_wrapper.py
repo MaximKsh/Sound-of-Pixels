@@ -1,7 +1,9 @@
 import torch
 import torchvision
+import torch.nn as nn
 import torch.nn.functional as F
 
+from helpers.utils import warpgrid
 from .synthesizer_net import InnerProd, Bias
 from .audio_net import Unet
 from .vision_net import ResnetFC, ResnetDilated
@@ -25,33 +27,32 @@ def activate(x, activation):
         raise Exception('Unkown activation!')
 
 
-# Network wrapper, defines forward pass
-class NetWrapper(torch.nn.Module):
+class NetWrapper(nn.Module):
     def __init__(self, nets, crit):
         super(NetWrapper, self).__init__()
         self.net_sound, self.net_frame, self.net_synthesizer = nets
         self.crit = crit
 
-    def forward(self, batch_data, args):
+    def forward(self, batch_data, context):
         mag_mix = batch_data['mag_mix']
         mags = batch_data['mags']
         frames = batch_data['frames']
         mag_mix = mag_mix + 1e-10
 
-        N = args.num_mix
+        N = context['config']['num_mix']
         B = mag_mix.size(0)
         T = mag_mix.size(3)
 
         # 0.0 warp the spectrogram
-        if args.log_freq:
+        if context['config']['log_freq']:
             grid_warp = torch.from_numpy(
-                warpgrid(B, 256, T, warp=True)).to(args.device)
+                warpgrid(B, 256, T, warp=True)).to(context['device'])
             mag_mix = F.grid_sample(mag_mix, grid_warp, align_corners=True)
             for n in range(N):
                 mags[n] = F.grid_sample(mags[n], grid_warp, align_corners=True)
 
         # 0.1 calculate loss weighting coefficient: magnitude of input mixture
-        if args.weighted_loss:
+        if context['config']['weighted_loss']:
             weight = torch.log1p(mag_mix)
             weight = torch.clamp(weight, 1e-3, 10)
         else:
@@ -60,7 +61,7 @@ class NetWrapper(torch.nn.Module):
         # 0.2 ground truth masks are computed after warpping!
         gt_masks = [None for n in range(N)]
         for n in range(N):
-            if args.binary_mask:
+            if context['config']['binary_mask']:
                 # for simplicity, mag_N > 0.5 * mag_mix
                 gt_masks[n] = (mags[n] > 0.5 * mag_mix).float()
             else:
@@ -73,19 +74,19 @@ class NetWrapper(torch.nn.Module):
 
         # 1. forward net_sound -> BxCxHxW
         feat_sound = self.net_sound(log_mag_mix)
-        feat_sound = activate(feat_sound, args.sound_activation)
+        feat_sound = activate(feat_sound, context['config']['sound_activation'])
 
         # 2. forward net_frame -> Bx1xC
         feat_frames = [None for n in range(N)]
         for n in range(N):
             feat_frames[n] = self.net_frame.forward_multiframe(frames[n])
-            feat_frames[n] = activate(feat_frames[n], args.img_activation)
+            feat_frames[n] = activate(feat_frames[n], context['config']['img_activation'])
 
         # 3. sound synthesizer
         pred_masks = [None for n in range(N)]
         for n in range(N):
             pred_masks[n] = self.net_synthesizer(feat_frames[n], feat_sound)
-            pred_masks[n] = activate(pred_masks[n], args.output_activation)
+            pred_masks[n] = activate(pred_masks[n], context['config']['output_activation'])
 
         # 4. loss
         err = self.crit(pred_masks, gt_masks, weight).reshape(1)
@@ -95,7 +96,7 @@ class NetWrapper(torch.nn.Module):
              'mag_mix': mag_mix, 'mags': mags, 'weight': weight}
 
 
-class ModelBuilder():
+class ModelBuilder:
     # custom weights initialization
     def weights_init(self, m):
         classname = m.__class__.__name__
@@ -125,10 +126,8 @@ class ModelBuilder():
 
         return net_sound
 
-    # builder for vision
-    def build_frame(self, arch='resnet18', fc_dim=64, pool_type='avgpool',
-                    weights=''):
-        pretrained=True
+    def build_frame(self, arch='resnet18', fc_dim=64, pool_type='avgpool', weights=''):
+        pretrained = True
         if arch == 'resnet18fc':
             original_resnet = torchvision.models.resnet18(pretrained)
             net = ResnetFC(

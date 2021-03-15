@@ -218,7 +218,7 @@ def output_predictions(data, outputs, args):
     for i in range(args.num_frames):
         imwrite(os.path.join(folder, f'frame{i}.jpg'), frames_tensor[i])
     mix_wav = istft_reconstruction(mag_mix[j, 0], phase_mix[j, 0], hop_length=args.stft_hop)
-    wavfile.write(os.path.join(folder, 'mix.wav'), args.audRate, mix_wav)
+    wavfile.write(os.path.join(folder, 'mix.wav'), args.aud_rate, mix_wav)
     
     # SBR
     for x in range(14):
@@ -228,7 +228,7 @@ def output_predictions(data, outputs, args):
             # output audio
             pred_mag = mag_mix[j, 0] * pred_masks_linear[x][y][j, 0]
             preds_wav = istft_reconstruction(pred_mag, phase_mix[j, 0], hop_length=args.stft_hop)
-            wavfile.write(os.path.join(grid_folder, f'{name}-pred.wav'), args.audRate, preds_wav)
+            wavfile.write(os.path.join(grid_folder, f'{name}-pred.wav'), args.aud_rate, preds_wav)
             
             # output masks
             pred_mask = (np.clip(pred_masks_[j, x, y], 0, 1) * 255).astype(np.uint8)
@@ -327,8 +327,7 @@ def main(args):
             break
         cnt += 1
 
-    
-    
+
 if __name__ == '__main__':
     # arguments
     parser = ArgParser()

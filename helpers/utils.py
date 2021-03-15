@@ -4,7 +4,7 @@ import os
 import shutil
 
 import numpy as np
-# import librosa
+import librosa
 import cv2
 
 import subprocess as sp
@@ -30,13 +30,18 @@ def warpgrid(bs, HO, WO, warp=True):
     return grid
 
 
-def makedirs(path, remove=False):
+def makedirs(path, remove=False, verbose=True):
     if os.path.isdir(path):
         if remove:
             shutil.rmtree(path)
-            print('removed existing directory...')
+            if verbose:
+                print(f'Remove: {path}')
         else:
+            if verbose:
+                print(f'Already exists: {path}')
             return
+    if verbose:
+        print(f'Create: {path}')
     os.makedirs(path)
 
 
@@ -101,11 +106,11 @@ def magnitude2heatmap(mag, log=True, scale=200.):
     mag_color = mag_color[:, :, ::-1]
     return mag_color
 
-#
-# def istft_reconstruction(mag, phase, hop_length=256):
-#     spec = mag.astype(np.complex) * np.exp(1j*phase)
-#     wav = librosa.istft(spec, hop_length=hop_length)
-#     return np.clip(wav, -1., 1.)
+
+def istft_reconstruction(mag, phase, hop_length=256):
+    spec = mag.astype(np.complex) * np.exp(1j*phase)
+    wav = librosa.istft(spec, hop_length=hop_length)
+    return np.clip(wav, -1., 1.)
 
 
 class VideoWriter:
@@ -221,14 +226,14 @@ def save_video(path, tensor, fps=25):
     writer.release()
 
 
-# def save_audio(path, audio_numpy, sr):
-#     librosa.output.write_wav(path, audio_numpy, sr)
+def save_audio(path, audio_numpy, sr):
+    librosa.output.write_wav(path, audio_numpy, sr)
 
 
 def format_id(config: dict) -> str:
     id_ = config['id']
 
-    if config['finetune'] != '':
+    if config['finetune']:
         id_ += f'-finetune{hash(config["finetune"])}'
 
     id_ += f'-{config["num_mix"]}mix'
@@ -253,10 +258,7 @@ def format_id(config: dict) -> str:
     id_ += f'-channels{config["num_channels"]}'
     id_ += f'-epoch{config["num_epoch"]}'
 
-    if isinstance(config['lr_steps'], int):
-        id_ += f'-step{config["lr_steps"]}'
-    elif isinstance(config['lr_steps'], list):
-        id_ += '-step' + '_'.join([str(x) for x in config['lr_steps']])
+    id_ += '-step' + '_'.join([str(x) for x in config['lr_steps']])
 
     return id_
 
@@ -277,6 +279,7 @@ def create_context(config: dict) -> dict:
 
     context['path'] = os.path.join(config['ckpt'], context['id'])
     context['vis'] = os.path.join(context['path'], config['vis_dir'])
+    context['load_best_model'] = False
 
     context['weights_sound_latest'] = os.path.join(context['path'], 'sound_latest.pth')
     context['weights_frame_latest'] = os.path.join(context['path'], 'frame_latest.pth')
@@ -290,6 +293,10 @@ def create_context(config: dict) -> dict:
     context['weights_sound_best'] = os.path.join(context['path'], 'sound_best.pth')
     context['weights_frame_best'] = os.path.join(context['path'], 'frame_best.pth')
     context['weights_synthesizer_best'] = os.path.join(context['path'], 'synthesizer_best.pth')
+
+    context['lr_sound'] = config['lr_sound']
+    context['lr_frame'] = config['lr_frame']
+    context['lr_synthesizer'] = config['lr_synthesizer']
 
     context['best_err'] = float('inf')
     return context

@@ -21,7 +21,8 @@
 * num_gpus - number of gpus to use
 * batch_size_per_gpu - input batch size
 * workers - number of data loading workers
-* num_val - number of images to evalutate
+* num_val - number of images to evaluate
+* num_vis - number of images to display during evaluation
 * aud_len - sound length
 * aud_rate - sound sampling rate
 * stft_frame - stft frame length

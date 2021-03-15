@@ -1,0 +1,5 @@
+{
+  "list_train": "data-music/train.csv",
+  "list_val": "data-music/val.csv",
+  "dup_trainset": 1
+}

@@ -21,6 +21,7 @@
   "batch_size_per_gpu": 32,
   "workers": 32,
   "num_val": -1,
+  "num_vis": 10,
   "aud_len": 65535,
   "aud_rate": 11025,
   "stft_frame": 1022,
