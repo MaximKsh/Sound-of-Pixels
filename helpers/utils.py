@@ -278,7 +278,8 @@ def create_context(config: dict) -> dict:
     }
 
     context['path'] = os.path.join(config['ckpt'], context['id'])
-    context['vis'] = os.path.join(context['path'], config['vis_dir'])
+    context['vis_val'] = os.path.join(context['path'], config['val_vis_dir'])
+    context['vis_test'] = os.path.join(context['path'], config['test_vis_dir'])
     context['load_best_model'] = False
 
     context['weights_sound_latest'] = os.path.join(context['path'], 'sound_latest.pth')
@@ -301,3 +302,9 @@ def create_context(config: dict) -> dict:
     context['best_err'] = float('inf')
     return context
 
+
+def get_ctx(context: dict, key: str):
+    try:
+        return context[key]
+    except KeyError:
+        return context['config'][key]

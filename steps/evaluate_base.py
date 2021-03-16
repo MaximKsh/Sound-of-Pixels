@@ -1,18 +1,17 @@
 import os
 
 import numpy as np
-import torch
-import torch.nn.functional as F
+from imageio import imwrite
 from mir_eval.separation import bss_eval_sources
 from scipy.io import wavfile
-from imageio import imwrite
 
-from helpers.utils import makedirs, AverageMeter, warpgrid, istft_reconstruction, magnitude2heatmap, recover_rgb, \
-    save_video, combine_video_audio
+from helpers.utils import makedirs, AverageMeter, istft_reconstruction, magnitude2heatmap, recover_rgb, \
+    save_video, combine_video_audio, get_ctx
 from helpers.viz import HTMLVisualizer, plot_loss_metrics
+from steps.common import unwarp_log_scale, detach_mask
 
 
-def calc_metrics(batch_data, outputs, context):
+def calc_metrics(batch_data, outputs, ctx):
     # meters
     sdr_mix_meter = AverageMeter()
     sdr_meter = AverageMeter()
@@ -27,38 +26,26 @@ def calc_metrics(batch_data, outputs, context):
     pred_masks_ = outputs['pred_masks']
 
     # unwarp log scale
-    N = context['config']['num_mix']
+    N = get_ctx(ctx, 'num_mix')
     B = mag_mix.size(0)
-    pred_masks_linear = [None for n in range(N)]
-    for n in range(N):
-        if context['config']['log_freq']:
-            w = warpgrid(B, context['config']['stft_frame'] // 2 + 1, pred_masks_[0].size(3), warp=False)
-            grid_unwarp = torch.from_numpy(w).to(context['device'])
-            pred_masks_linear[n] = F.grid_sample(pred_masks_[n], grid_unwarp, align_corners=True)
-        else:
-            pred_masks_linear[n] = pred_masks_[n]
+    pred_masks_linear = unwarp_log_scale(ctx, pred_masks_)
 
     # convert into numpy
     mag_mix = mag_mix.numpy()
     phase_mix = phase_mix.numpy()
-    for n in range(N):
-        pred_masks_linear[n] = pred_masks_linear[n].detach().cpu().numpy()
-
-        # threshold if binary mask
-        if context['config']['binary_mask']:
-            pred_masks_linear[n] = (pred_masks_linear[n] > context['config']['mask_thres']).astype(np.float32)
+    pred_masks_linear = detach_mask(ctx, pred_masks_linear, get_ctx(ctx, 'binary_mask'))
 
     # loop over each sample
     for j in range(B):
         # save mixture
-        mix_wav = istft_reconstruction(mag_mix[j, 0], phase_mix[j, 0], hop_length=context['config']['stft_hop'])
+        mix_wav = istft_reconstruction(mag_mix[j, 0], phase_mix[j, 0], hop_length=get_ctx(ctx, 'stft_hop'))
 
         # save each component
         preds_wav = [None for n in range(N)]
         for n in range(N):
             # Predicted audio recovery
             pred_mag = mag_mix[j, 0] * pred_masks_linear[n][j, 0]
-            preds_wav[n] = istft_reconstruction(pred_mag, phase_mix[j, 0], hop_length=context['config']['stft_hop'])
+            preds_wav[n] = istft_reconstruction(pred_mag, phase_mix[j, 0], hop_length=get_ctx(ctx, 'stft_hop'))
 
         # separation performance computes
         L = preds_wav[0].shape[0]
@@ -88,7 +75,7 @@ def calc_metrics(batch_data, outputs, context):
             sar_meter.average()]
 
 
-def output_visuals(vis_rows, batch_data, outputs, context):
+def output_visuals(vis_rows, batch_data, outputs, ctx):
     # fetch data and predictions
     mag_mix = batch_data['mag_mix']
     phase_mix = batch_data['phase_mix']
@@ -100,39 +87,25 @@ def output_visuals(vis_rows, batch_data, outputs, context):
     mag_mix_ = outputs['mag_mix']
     weight_ = outputs['weight']
 
-    vis = context['vis']
-    aud_rate = context['config']['aud_rate']
+    vis = get_ctx(ctx, 'vis_val')
+    aud_rate = get_ctx(ctx, 'aud_rate')
 
     # unwarp log scale
-    N = context['config']['num_mix']
+    pred_masks_linear = unwarp_log_scale(ctx, pred_masks_)
+    gt_masks_linear = unwarp_log_scale(ctx, gt_masks_)
+
+    N = get_ctx(ctx, 'num_mix')
     B = mag_mix.size(0)
-    pred_masks_linear = [None for n in range(N)]
-    gt_masks_linear = [None for n in range(N)]
-    for n in range(N):
-        if context['config']['log_freq']:
-            w = warpgrid(B, context['config']['stft_frame'] // 2 + 1, gt_masks_[0].size(3), warp=False)
-            grid_unwarp = torch.from_numpy(w).to(context['device'])
-            pred_masks_linear[n] = F.grid_sample(pred_masks_[n], grid_unwarp, align_corners=True)
-            gt_masks_linear[n] = F.grid_sample(gt_masks_[n], grid_unwarp, align_corners=True)
-        else:
-            pred_masks_linear[n] = pred_masks_[n]
-            gt_masks_linear[n] = gt_masks_[n]
 
     # convert into numpy
     mag_mix = mag_mix.numpy()
     mag_mix_ = mag_mix_.detach().cpu().numpy()
     phase_mix = phase_mix.numpy()
     weight_ = weight_.detach().cpu().numpy()
-    for n in range(N):
-        pred_masks_[n] = pred_masks_[n].detach().cpu().numpy()
-        pred_masks_linear[n] = pred_masks_linear[n].detach().cpu().numpy()
-        gt_masks_[n] = gt_masks_[n].detach().cpu().numpy()
-        gt_masks_linear[n] = gt_masks_linear[n].detach().cpu().numpy()
-
-        # threshold if binary mask
-        if context['config']['binary_mask']:
-            pred_masks_[n] = (pred_masks_[n] > context['config']['mask_thres']).astype(np.float32)
-            pred_masks_linear[n] = (pred_masks_linear[n] > context['config']['mask_thres']).astype(np.float32)
+    pred_masks_ = detach_mask(ctx, pred_masks_, get_ctx(ctx, 'binary_mask'))
+    pred_masks_linear = detach_mask(ctx, pred_masks_linear, get_ctx(ctx, 'binary_mask'))
+    gt_masks_ = detach_mask(ctx, gt_masks_, False)
+    gt_masks_linear = detach_mask(ctx, gt_masks_linear, False)
 
     # loop over each sample
     for j in range(B):
@@ -146,7 +119,7 @@ def output_visuals(vis_rows, batch_data, outputs, context):
         makedirs(os.path.join(vis, prefix))
 
         # save mixture
-        mix_wav = istft_reconstruction(mag_mix[j, 0], phase_mix[j, 0], hop_length=context['config']['stft_hop'])
+        mix_wav = istft_reconstruction(mag_mix[j, 0], phase_mix[j, 0], hop_length=get_ctx(ctx, 'stft_hop'))
         mix_amp = magnitude2heatmap(mag_mix_[j, 0])
         weight = magnitude2heatmap(weight_[j, 0], log=False, scale=100.)
         filename_mixwav = os.path.join(prefix, 'mix.wav')
@@ -162,9 +135,9 @@ def output_visuals(vis_rows, batch_data, outputs, context):
         for n in range(N):
             # GT and predicted audio recovery
             gt_mag = mag_mix[j, 0] * gt_masks_linear[n][j, 0]
-            gt_wav = istft_reconstruction(gt_mag, phase_mix[j, 0], hop_length=context['config']['stft_hop'])
+            gt_wav = istft_reconstruction(gt_mag, phase_mix[j, 0], hop_length=get_ctx(ctx, 'stft_hop'))
             pred_mag = mag_mix[j, 0] * pred_masks_linear[n][j, 0]
-            preds_wav[n] = istft_reconstruction(pred_mag, phase_mix[j, 0], hop_length=context['config']['stft_hop'])
+            preds_wav[n] = istft_reconstruction(pred_mag, phase_mix[j, 0], hop_length=get_ctx(ctx, 'stft_hop'))
 
             # output masks
             filename_gtmask = os.path.join(prefix, 'gtmask{}.jpg'.format(n + 1))
@@ -189,11 +162,11 @@ def output_visuals(vis_rows, batch_data, outputs, context):
             wavfile.write(os.path.join(vis, filename_predwav), aud_rate, preds_wav[n])
 
             # output video
-            frames_tensor = [recover_rgb(frames[n][j, :, t]) for t in range(context['config']['num_frames'])]
+            frames_tensor = [recover_rgb(frames[n][j, :, t]) for t in range(get_ctx(ctx, 'num_frames'))]
             frames_tensor = np.asarray(frames_tensor)
             path_video = os.path.join(vis, prefix, 'video{}.mp4'.format(n + 1))
             save_video(path_video, frames_tensor,
-                       fps=context['config']['frame_rate'] / context['config']['stride_frames'])
+                       fps=get_ctx(ctx, 'frame_rate') / get_ctx(ctx, 'stride_frames'))
 
             # combine gt video and audio
             filename_av = os.path.join(prefix, 'av{}.mp4'.format(n + 1))
@@ -213,14 +186,14 @@ def output_visuals(vis_rows, batch_data, outputs, context):
         vis_rows.append(row_elements)
 
 
-def _evaluate(context: dict):
-    epoch = context["epoch"]
-    print(f'Evaluating at {context["epoch"]} epochs...')
-    makedirs(context['vis'], remove=True)
+def _evaluate(ctx: dict):
+    epoch = get_ctx(ctx, 'epoch')
+    print(f'Evaluating at {epoch} epochs...')
+    makedirs(get_ctx(ctx, 'vis_val'), remove=True)
 
-    net_wrapper = context['net_wrapper']
+    net_wrapper = get_ctx(ctx, 'net_wrapper')
     net_wrapper.eval()
-    loader = context['loader_val']
+    loader = get_ctx(ctx, 'loader_val')
 
     # initialize meters
     loss_meter = AverageMeter()
@@ -230,9 +203,9 @@ def _evaluate(context: dict):
     sar_meter = AverageMeter()
 
     # initialize HTML header
-    visualizer = HTMLVisualizer(os.path.join(context['vis'], 'index.html'))
+    visualizer = HTMLVisualizer(os.path.join(get_ctx(ctx, 'vis_val'), 'index.html'))
     header = ['Filename', 'Input Mixed Audio']
-    for n in range(1, context['config']['num_mix'] + 1):
+    for n in range(1, get_ctx(ctx, 'num_mix') + 1):
         header += [f'Video {n:d}', f'Predicted Audio {n:d}', f'GroundTruth Audio {n}', f'Predicted Mask {n}',
                    f'GroundTruth Mask {n}']
     header += ['Loss weighting']
@@ -240,32 +213,28 @@ def _evaluate(context: dict):
     vis_rows = []
 
     for i, batch_data in enumerate(loader):
-        err, outputs = net_wrapper.forward(batch_data, context)
+        err, outputs = net_wrapper.forward(batch_data, ctx)
         err = err.mean()
 
         loss_meter.update(err.item())
         print(f'[Eval] iter {i}, loss: {err.item():.4f}')
 
         # calculate metrics
-        sdr_mix, sdr, sir, sar = calc_metrics(batch_data, outputs, context)
+        sdr_mix, sdr, sir, sar = calc_metrics(batch_data, outputs, ctx)
         sdr_mix_meter.update(sdr_mix)
         sdr_meter.update(sdr)
         sir_meter.update(sir)
         sar_meter.update(sar)
 
         # output visualization
-        if len(vis_rows) < context['config']['num_vis']:
-            output_visuals(vis_rows, batch_data, outputs, context)
+        if len(vis_rows) < get_ctx(ctx, 'num_vis'):
+            output_visuals(vis_rows, batch_data, outputs, ctx)
 
-    print('[Eval Summary] Epoch: {}, Loss: {:.4f}, '
-          'SDR_mixture: {:.4f}, SDR: {:.4f}, SIR: {:.4f}, SAR: {:.4f}'
-          .format(epoch, loss_meter.average(),
-                  sdr_mix_meter.average(),
-                  sdr_meter.average(),
-                  sir_meter.average(),
-                  sar_meter.average()))
+    print(f'[Eval Summary] Epoch: {epoch}, Loss: {loss_meter.average():.4f}, '
+          f'SDR_mixture: {sdr_mix_meter.average():.4f}, SDR: {sdr_meter.average():.4f}, '
+          f'SIR: {sir_meter.average():.4f}, SAR: {sar_meter.average():.4f}')
 
-    history = context['history']
+    history = get_ctx(ctx, 'history')
     history['val']['epoch'].append(epoch)
     history['val']['err'].append(loss_meter.average())
     history['val']['sdr'].append(sdr_meter.average())
@@ -279,4 +248,4 @@ def _evaluate(context: dict):
     # Plot figure
     if epoch > 0:
         print('Plotting figures...')
-        plot_loss_metrics(context['path'], history)
+        plot_loss_metrics(get_ctx(ctx, 'path'), history)

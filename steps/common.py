@@ -1,52 +1,56 @@
 from typing import Optional
 
+import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
+from helpers.utils import get_ctx, warpgrid
 from models.net_wrapper import ModelBuilder, NetWrapper
 
 
-def build_model(context: dict):
-    if context['load_best_model']:
-        weights_sound = context['weights_sound_best']
-        weights_frame = context['weights_frame_best']
-        weights_synthesizer = context['weights_synthesizer_best']
-    elif context['config']['continue_training']:
-        weights_sound = context['weights_sound_latest']
-        weights_frame = context['weights_frame_latest']
-        weights_synthesizer = context['weights_synthesizer_latest']
-    elif context['config']['finetune']:
-        weights_sound = context['weights_sound_finetune']
-        weights_frame = context['weights_frame_finetune']
-        weights_synthesizer = context['weights_synthesizer_finetune']
+def build_model(ctx: dict):
+    if get_ctx(ctx, 'load_best_model'):
+        weights_sound = get_ctx(ctx, 'weights_sound_best')
+        weights_frame = get_ctx(ctx, 'weights_frame_best')
+        weights_synthesizer = get_ctx(ctx, 'weights_synthesizer_best')
+    elif get_ctx(ctx, 'continue_training'):
+        weights_sound = get_ctx(ctx, 'weights_sound_latest')
+        weights_frame = get_ctx(ctx, 'weights_frame_latest')
+        weights_synthesizer = get_ctx(ctx, 'weights_synthesizer_latest')
+    elif get_ctx(ctx, 'finetune'):
+        weights_sound = get_ctx(ctx, 'weights_sound_finetune')
+        weights_frame = get_ctx(ctx, 'weights_frame_finetune')
+        weights_synthesizer = get_ctx(ctx, 'weights_synthesizer_finetune')
     else:
         weights_sound, weights_frame, weights_synthesizer = '', '', ''
 
     builder = ModelBuilder()
     net_sound = builder.build_sound(
-        arch=context['config']['arch_sound'],
-        fc_dim=context['config']['num_channels'],
+        arch=get_ctx(ctx, 'arch_sound'),
+        fc_dim=get_ctx(ctx, 'num_channels'),
         weights=weights_sound)
     net_frame = builder.build_frame(
-        arch=context['config']['arch_frame'],
-        fc_dim=context['config']['num_channels'],
-        pool_type=context['config']['img_pool'],
+        arch=get_ctx(ctx, 'arch_frame'),
+        fc_dim=get_ctx(ctx, 'num_channels'),
+        pool_type=get_ctx(ctx, 'img_pool'),
         weights=weights_frame)
     net_synthesizer = builder.build_synthesizer(
-        arch=context['config']['arch_synthesizer'],
-        fc_dim=context['config']['num_channels'],
+        arch=get_ctx(ctx, 'arch_synthesizer'),
+        fc_dim=get_ctx(ctx, 'num_channels'),
         weights=weights_synthesizer)
 
-    if context['config']['finetune']:
+    if get_ctx(ctx, 'finetune'):
         for param in net_sound.parameters():
             param.requires_grad = False
         for param in net_frame.parameters():
             param.requires_grad = False
     nets = (net_sound, net_frame, net_synthesizer)
-    crit = builder.build_criterion(arch=context['config']['loss'])
+    crit = builder.build_criterion(arch=get_ctx(ctx, 'loss'))
     net_wrapper = NetWrapper(nets, crit)
-    if context['device'].type != 'cpu':
-        net_wrapper = nn.DataParallel(net_wrapper, device_ids=range(context['config']['num_gpus']))
-        net_wrapper.to(context['device'])
+    if get_ctx(ctx, 'device').type != 'cpu':
+        net_wrapper = nn.DataParallel(net_wrapper, device_ids=range(get_ctx(ctx, 'num_gpus')))
+        net_wrapper.to(get_ctx(ctx, 'device'))
 
     return net_wrapper
 
@@ -60,28 +64,54 @@ def get_underlying_nets(module: nn.Module):
     raise ValueError('module can be NetWrapper or nn.DataParallel')
 
 
-def adjust_learning_rate(context):
-    context['lr_sound'] *= 0.1
-    context['lr_frame'] *= 0.1
-    context['lr_synthesizer'] *= 0.1
-    for param_group in context['optimizer'].param_groups:
+def adjust_learning_rate(ctx):
+    ctx['lr_sound'] *= 0.1
+    ctx['lr_frame'] *= 0.1
+    ctx['lr_synthesizer'] *= 0.1
+    for param_group in get_ctx(ctx, 'optimizer').param_groups:
         param_group['lr'] *= 0.1
 
 
-def init_history(context: Optional[dict]):
+def init_history(ctx: Optional[dict]):
     history = {
         'train': {'epoch': [], 'err': []},
         'val': {'epoch': [], 'err': [], 'sdr': [], 'sir': [], 'sar': []}}
 
-    if context and context['config']['continue_training']:
+    if ctx and get_ctx(ctx, 'continue_training'):
         suffix_latest = 'latest.pth'
-        from_epoch = torch.load('{}/epoch_{}'.format(context['path'], suffix_latest)) + 1
-        history = torch.load('{}/history_{}'.format(context, suffix_latest))
+        from_epoch = torch.load('{}/epoch_{}'.format(get_ctx(ctx, 'path'), suffix_latest)) + 1
+        history = torch.load('{}/history_{}'.format(ctx, suffix_latest))
 
-        for step in context['config']['lr_steps']:
+        for step in get_ctx(ctx, 'lr_steps'):
             if step < from_epoch:
-                adjust_learning_rate(context)
+                adjust_learning_rate(ctx)
     else:
         from_epoch = 0
 
     return history, from_epoch
+
+
+def unwarp_log_scale(ctx, arr):
+    N = get_ctx(ctx, 'num_mix')
+    B = arr[0].size(0)
+    linear = [None for n in range(N)]
+
+    for n in range(N):
+        if get_ctx(ctx, 'log_freq'):
+            w = warpgrid(B, get_ctx(ctx, 'stft_frame') // 2 + 1, arr[0].size(3), warp=False)
+            grid_unwarp = torch.from_numpy(w).to(get_ctx(ctx, 'device'))
+            linear[n] = F.grid_sample(arr[n], grid_unwarp, align_corners=True)
+        else:
+            linear[n] = arr[n]
+
+    return linear
+
+
+def detach_mask(ctx, mask, binary):
+    N = get_ctx(ctx, 'num_mix')
+    for n in range(N):
+        mask[n] = mask[n].detach().cpu().numpy()
+        if binary:
+            mask[n] = (mask[n] > get_ctx(ctx, 'mask_thres')).astype(np.float32)
+
+    return mask

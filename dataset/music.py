@@ -1,14 +1,16 @@
 import os
 import random
+
+from helpers.utils import get_ctx
 from .base import BaseDataset
 
 
 class MUSICMixDataset(BaseDataset):
-    def __init__(self, list_sample, config, **kwargs):
+    def __init__(self, list_sample, ctx, **kwargs):
         super(MUSICMixDataset, self).__init__(
-            list_sample, config, **kwargs)
-        self.fps = config['frame_rate']
-        self.num_mix = config['num_mix']
+            list_sample, ctx, **kwargs)
+        self.fps = get_ctx(ctx, 'frame_rate')
+        self.num_mix = get_ctx(ctx, 'num_mix')
 
     def __getitem__(self, index):
         N = self.num_mix

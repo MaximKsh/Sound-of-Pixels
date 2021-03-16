@@ -1,25 +1,25 @@
 import torch
 
 from dataset.music import MUSICMixDataset
+from helpers.utils import get_ctx
 from steps.common import build_model, init_history
 from steps.evaluate_base import _evaluate
 
 
-def evaluate(context: dict):
-    context['load_best_model'] = True
-    context['net_wrapper'] = build_model(context)
+def evaluate(ctx: dict):
+    ctx['load_best_model'] = True
+    ctx['net_wrapper'] = build_model(ctx)
 
-    dataset_val = MUSICMixDataset(context['config']['list_val'], context['config'],
-                                  max_sample=context['config']['num_val'], split='val')
-    context['loader_val'] = torch.utils.data.DataLoader(
+    dataset_val = MUSICMixDataset(get_ctx(ctx, 'list_val'), ctx, max_sample=get_ctx(ctx, 'num_val'), split='val')
+    ctx['loader_val'] = torch.utils.data.DataLoader(
         dataset_val,
-        batch_size=context['batch_size'],
+        batch_size=get_ctx(ctx, 'batch_size'),
         shuffle=False,
         num_workers=2,
         drop_last=False)
 
-    context['history'], _ = init_history(None)
+    ctx['history'], _ = init_history(None)
 
-    context['epoch'] = 0
+    ctx['epoch'] = 0
     with torch.set_grad_enabled(False):
-        _evaluate(context)
+        _evaluate(ctx)

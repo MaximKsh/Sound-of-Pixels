@@ -8,26 +8,27 @@ import torchaudio
 import librosa
 from PIL import Image
 
+from helpers.utils import get_ctx
 from . import video_transforms as vtransforms
 
 
 class BaseDataset(torchdata.Dataset):
-    def __init__(self, list_sample, config, max_sample=-1, split='train'):
+    def __init__(self, list_sample, ctx, max_sample=-1, split='train'):
         # params
-        self.num_frames = config['num_frames']
-        self.stride_frames = config['stride_frames']
-        self.frame_rate = config['frame_rate']
-        self.img_size = config['img_size']
-        self.aud_rate = config['aud_rate']
-        self.aud_len = config['aud_len']
+        self.num_frames = get_ctx(ctx, 'num_frames')
+        self.stride_frames = get_ctx(ctx, 'stride_frames')
+        self.frame_rate = get_ctx(ctx, 'frame_rate')
+        self.img_size = get_ctx(ctx, 'img_size')
+        self.aud_rate = get_ctx(ctx, 'aud_rate')
+        self.aud_len = get_ctx(ctx, 'aud_len')
         self.aud_sec = 1. * self.aud_len / self.aud_rate
-        self.binary_mask = config['binary_mask']
+        self.binary_mask = get_ctx(ctx, 'binary_mask')
 
         # STFT params
-        self.log_freq = config['log_freq']
-        self.stft_frame = config['stft_frame']
-        self.stft_hop = config['stft_hop']
-        self.HS = config['stft_frame'] // 2 + 1
+        self.log_freq = get_ctx(ctx, 'log_freq')
+        self.stft_frame = get_ctx(ctx, 'stft_frame')
+        self.stft_hop = get_ctx(ctx, 'stft_hop')
+        self.HS = get_ctx(ctx, 'stft_frame') // 2 + 1
         self.WS = (self.aud_len + 1) // self.stft_hop
 
         self.split = split
@@ -50,7 +51,7 @@ class BaseDataset(torchdata.Dataset):
             raise RuntimeError('Error list_sample!')
 
         if self.split == 'train':
-            self.list_sample *= config['dup_trainset']
+            self.list_sample *= get_ctx(ctx, 'dup_trainset')
             random.shuffle(self.list_sample)
 
         if max_sample > 0:

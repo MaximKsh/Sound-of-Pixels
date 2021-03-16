@@ -1,5 +1,7 @@
 {
   "list_train": "data-music/train.csv",
   "list_val": "data-music/val.csv",
-  "dup_trainset": 1
+  "list_test": "data-music/test.csv",
+  "dup_trainset": 1,
+  "num_test": 32
 }

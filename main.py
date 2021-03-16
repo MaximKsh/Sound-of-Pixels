@@ -3,7 +3,7 @@ import random
 import numpy as np
 import torch
 
-from helpers.utils import read_config, create_context
+from helpers.utils import read_config, create_context, get_ctx
 from steps.test import test
 from steps.evaluate import evaluate
 from steps.train import train
@@ -20,19 +20,19 @@ if __name__ == '__main__':
         config_override = read_config(args.config)
         config = {**config, **config_override}
 
-    context = create_context(config)
+    ctx = create_context(config)
 
-    random.seed(context['config']['seed'])
-    np.random.seed(context['config']['seed'])
-    torch.manual_seed(context['config']['seed'])
+    random.seed(get_ctx(ctx, 'seed'))
+    np.random.seed(get_ctx(ctx, 'seed'))
+    torch.manual_seed(get_ctx(ctx, 'seed'))
 
     if args.mode == 'train':
-        train(context)
+        train(ctx)
     elif args.mode == 'eval':
-        evaluate(context)
+        evaluate(ctx)
     elif args.mode == 'test':
-        test(context)
+        test(ctx)
     elif args.mode == 'regions':
-        regions(context)
+        regions(ctx)
     else:
         raise RuntimeError(f'Unsupported mode {args.mode}, please use train/eval/test/regions')
