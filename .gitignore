@@ -3,6 +3,7 @@
 __pycache__
 .python-version
 .idea/
+.DS_Store
 
 ckpt/
 data-*/
