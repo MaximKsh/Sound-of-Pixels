@@ -95,6 +95,46 @@ class NetWrapper(nn.Module):
             {'pred_masks': pred_masks, 'gt_masks': gt_masks,
              'mag_mix': mag_mix, 'mags': mags, 'weight': weight}
 
+    def forward_pixelwise(self, batch_data, ctx):
+        mag_mix = batch_data['mag_mix']
+        frames = batch_data['frames']
+        mag_mix = mag_mix + 1e-10
+
+        bs = mag_mix.size(0)
+        T = mag_mix.size(3)
+
+        # 0.0 warp the spectrogram
+        if get_ctx(ctx, 'log_freq'):
+            grid_warp = torch.from_numpy(warpgrid(bs, 256, T, warp=True)).to(get_ctx(ctx, 'device'))
+            mag_mix = F.grid_sample(mag_mix, grid_warp, align_corners=True)
+
+        # LOG magnitude
+        log_mag_mix = torch.log(mag_mix).detach()
+
+        # 1. forward net_sound -> BxCxHxW
+        feat_sound = self.net_sound(log_mag_mix)
+        feat_sound = activate(feat_sound, get_ctx(ctx, 'sound_activation'))
+
+        # 2. forward net_frame -> Bx1xC
+        frames = frames[0]  # num_mix == 1
+        feat_frames = self.net_frame.forward_multiframe(frames, pool=False)
+
+        (B, C, T, H, W) = feat_frames.size()
+        feat_frames = feat_frames.permute(0, 1, 3, 4, 2)
+        feat_frames = feat_frames.reshape(B * C, H * W, T)
+        feat_frames = F.adaptive_avg_pool1d(feat_frames, 1)
+        feat_frames = feat_frames.view(B, C, H, W)
+
+        feat_frames = activate(feat_frames, get_ctx(ctx, 'img_activation'))
+
+        channels = feat_frames.detach().cpu().numpy()
+
+        # 3. sound synthesizer
+        pred_masks = self.net_synthesizer.forward_pixelwise(feat_frames, feat_sound)
+        pred_masks = activate(pred_masks, get_ctx(ctx, 'output_activation'))
+
+        return {'pred_masks': pred_masks, 'processed_mag_mix': mag_mix, 'feat_frames_channels': channels}
+
 
 class ModelBuilder:
     # custom weights initialization
@@ -108,7 +148,7 @@ class ModelBuilder:
         elif classname.find('Linear') != -1:
             m.weight.data.normal_(0.0, 0.0001)
 
-    def build_sound(self, arch='unet5', fc_dim=64, weights=''):
+    def build_sound(self, arch='unet5', fc_dim=64, weights='', device='cpu'):
         # 2D models
         if arch == 'unet5':
             net_sound = Unet(fc_dim=fc_dim, num_downs=5)
@@ -122,11 +162,11 @@ class ModelBuilder:
         net_sound.apply(self.weights_init)
         if len(weights) > 0:
             print('Loading weights for net_sound')
-            net_sound.load_state_dict(torch.load(weights))
+            net_sound.load_state_dict(torch.load(weights, map_location=device))
 
         return net_sound
 
-    def build_frame(self, arch='resnet18', fc_dim=64, pool_type='avgpool', weights=''):
+    def build_frame(self, arch='resnet18', fc_dim=64, pool_type='avgpool', weights='', device='cpu'):
         pretrained = True
         if arch == 'resnet18fc':
             original_resnet = torchvision.models.resnet18(pretrained)
@@ -141,10 +181,10 @@ class ModelBuilder:
 
         if len(weights) > 0:
             print('Loading weights for net_frame')
-            net.load_state_dict(torch.load(weights))
+            net.load_state_dict(torch.load(weights, map_location=device))
         return net
 
-    def build_synthesizer(self, arch, fc_dim=64, weights=''):
+    def build_synthesizer(self, arch, fc_dim=64, weights='', device='cpu'):
         if arch == 'linear':
             net = InnerProd(fc_dim=fc_dim)
         elif arch == 'bias':
@@ -155,7 +195,7 @@ class ModelBuilder:
         net.apply(self.weights_init)
         if len(weights) > 0:
             print('Loading weights for net_synthesizer')
-            net.load_state_dict(torch.load(weights))
+            net.load_state_dict(torch.load(weights, map_location=device))
         return net
 
     def build_criterion(self, arch):

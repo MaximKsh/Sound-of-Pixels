@@ -244,7 +244,7 @@ def format_id(config: dict) -> str:
     id_ += f'-{config["arch_frame"]}{config["img_activation"]}-' \
            f'{config["arch_sound"]}{config["sound_activation"]}-' \
            f'{config["arch_synthesizer"]}{config["output_activation"]}'
-    id_ += f'-frames{config["arch_synthesizer"]}stride{config["arch_synthesizer"]}'
+    id_ += f'-frames{config["num_frames"]}stride{config["stride_frames"]}'
     id_ += f'-{config["img_pool"]}'
 
     if config['binary_mask']:
@@ -280,6 +280,7 @@ def create_context(config: dict) -> dict:
     context['path'] = os.path.join(config['ckpt'], context['id'])
     context['vis_val'] = os.path.join(context['path'], config['val_vis_dir'])
     context['vis_test'] = os.path.join(context['path'], config['test_vis_dir'])
+    context['vis_regions'] = os.path.join(context['path'], config['regions_vis_dir'])
     context['load_best_model'] = False
 
     context['weights_sound_latest'] = os.path.join(context['path'], 'sound_latest.pth')

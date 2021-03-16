@@ -94,7 +94,7 @@ def init_history(ctx: Optional[dict]):
 def unwarp_log_scale(ctx, arr):
     N = get_ctx(ctx, 'num_mix')
     B = arr[0].size(0)
-    linear = [None for n in range(N)]
+    linear = [None for _ in range(N)]
 
     for n in range(N):
         if get_ctx(ctx, 'log_freq'):
