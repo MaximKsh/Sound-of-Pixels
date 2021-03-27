@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from helpers.utils import warpgrid, get_ctx
-from .synthesizer_net import InnerProd, Bias
+from .synthesizer_net import InnerProd, Bias, Transformer
 from .audio_net import Unet
 from .vision_net import ResnetFC, ResnetDilated
 from .criterion import BCELoss, L1Loss, L2Loss
@@ -189,6 +189,8 @@ class ModelBuilder:
             net = InnerProd(fc_dim=fc_dim)
         elif arch == 'bias':
             net = Bias()
+        elif arch == 'transformer':
+            net = Transformer(fc_dim)
         else:
             raise Exception('Architecture undefined!')
 
