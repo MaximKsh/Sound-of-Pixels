@@ -17,9 +17,43 @@ python3 -m pip install -r requirements-gpu.txt -f https://download.pytorch.org/w
 
 ## Data collection and preprocessing
 
-Data downloading and preprocessing will be described later...
+### MUSIC
+Download music dataset and youtube videos:
+```
+git clone https://github.com/roudimit/MUSIC_dataset.git <path-to-dataset>
+mkdir <path-to-dataset>/sop-data
+python3 preprocessing/download_extract.py MUSIC <path-to-dataset>/MUSIC_dataset/MUSIC_solo_videos.json <path-to-dataset>/sop-data/solo --n_jobs=2
+python3 preprocessing/download_extract.py MUSIC <path-to-dataset>/MUSIC_dataset/MUSIC_duet_videos.json <path-to-dataset>/sop-data/duet --n_jobs=2
+python3 preprocessing/download_extract.py MUSIC <path-to-dataset>/MUSIC_dataset/MUSIC21_duet_videos.json <path-to-dataset>/sop-data/solo21 --n_jobs=2
+```
+It is useful to regularize model with silent scenes (empty room)
+* Download [ADE20K](https://groups.csail.mit.edu/vision/datasets/ADE20K/)
+* Preprocess some room photos for training
+```
+python3 preprocessing/prepare_ade.py <path-to-ade> <path-to-dataset>/sop-data/silence
+```
+Path to ade is, for example, `../ADE20K_2016_07_26/images/training`
 
-Links with preprocessed data:
+
+Merge folders:
+```
+cd <path-to-dataset>/sop-data
+cp -r solo solo+duet+silence/
+cp -r duet solo+duet+silence/
+cp -r silence solo+duet+silence/
+
+cp -r solo21 solo21+duet+silence/
+cp -r duet solo21+duet+silence/
+cp -r silence solo21+duet+silence/
+```
+
+### VGGSound
+```
+git clone https://github.com/hche11/VGGSound.git <path-to-dataset>
+python3 preprocessing/download_extract.py VGGSound <path-to-dataset>/VGGSound/data/vggsound.csv <path-to-dataset>/vggsound --n_jobs=2
+```
+
+### Links with preprocessed data:
 * MUSIC: [https://disk.yandex.ru/d/lj-wdG4CXz8fUw](https://disk.yandex.ru/d/lj-wdG4CXz8fUw)
 * VGGSound: [https://disk.yandex.ru/d/u4OooLD30Ldzbw](https://disk.yandex.ru/d/u4OooLD30Ldzbw)
 
