@@ -20,8 +20,8 @@ python3 -m pip install -r requirements-gpu.txt -f https://download.pytorch.org/w
 Data downloading and preprocessing will be described later...
 
 Links with preprocessed data:
-* MUSIC:
-* VGGSound: 
+* MUSIC: [https://disk.yandex.ru/d/lj-wdG4CXz8fUw](https://disk.yandex.ru/d/lj-wdG4CXz8fUw)
+* VGGSound: [https://disk.yandex.ru/d/u4OooLD30Ldzbw](https://disk.yandex.ru/d/u4OooLD30Ldzbw)
 
 ## Indexing dataset
 
@@ -58,6 +58,16 @@ python3 main.py eval --config music.json
 * VGGSound 
 ```
 python3 main.py eval --config vggsound.json
+```
+
+## Inference
+* MUSIC:
+```
+python3 main.py regions --config music.json 
+```
+* VGGSound 
+```
+python3 main.py regions --config vggsound.json
 ```
 
 ## Reference
