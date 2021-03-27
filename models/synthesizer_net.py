@@ -93,7 +93,7 @@ class PositionalEncoding(nn.Module):
 class Transformer(nn.Module):
     def __init__(self, channels, num_encoder_layers=2, nhead=8, dim_feedforward=1024, dropout=0.1, activation='relu'):
         super(Transformer, self).__init__()
-        self.pos_encoder = PositionalEncoding(channels, dropout)
+        self.pos_encoder = PositionalEncoding(channels, dropout, max_len=256*256+14*14)
         encoder_layer = torch.nn.TransformerEncoderLayer(channels, nhead, dim_feedforward, dropout, activation)
         encoder_norm = torch.nn.LayerNorm(channels)
         self.encoder = torch.nn.TransformerEncoder(encoder_layer, num_encoder_layers, encoder_norm)
