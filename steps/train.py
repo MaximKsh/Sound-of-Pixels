@@ -16,7 +16,7 @@ def save_nets(ctx, suffix):
 
     torch.save(net_sound.state_dict(), os.path.join(path, f'sound_{suffix}'))
     torch.save(net_frame.state_dict(), os.path.join(path, f'frame_{suffix}'))
-    torch.save(net_synthesizer.state_dict(), os.path.join(path,f'synthesizer_{suffix}'))
+    torch.save(net_synthesizer.state_dict(), os.path.join(path, f'synthesizer_{suffix}'))
 
 
 def checkpoint(ctx: dict):
