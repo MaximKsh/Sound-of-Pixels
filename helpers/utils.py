@@ -30,7 +30,7 @@ def warpgrid(bs, HO, WO, warp=True):
     return grid
 
 
-def makedirs(path, remove=False, verbose=True):
+def makedirs(path, remove=False, verbose=False):
     if os.path.isdir(path):
         if remove:
             shutil.rmtree(path)
