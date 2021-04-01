@@ -17,7 +17,7 @@
   "weighted_loss": 0,
   "log_freq": 1,
 
-  "num_gpus": 1,
+  "gpu": [],
   "batch_size_per_gpu": 32,
   "workers": 32,
   "num_val": -1,

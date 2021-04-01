@@ -272,10 +272,14 @@ def read_config(path: str) -> dict:
 def create_context(config: dict) -> dict:
     context = {
         'config': config,
-        'batch_size': config['num_gpus'] * config['batch_size_per_gpu'],
-        'device': torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu'),
+        'batch_size': min(1, len(config['gpu'])) * config['batch_size_per_gpu'],
         'id': format_id(config)
     }
+
+    if len(config['gpu']) > 0 and torch.cuda.is_available():
+        context['device'] = torch.device('cuda')
+    else:
+        context['device'] = torch.device('cpu')
 
     context['path'] = os.path.join(config['ckpt'], context['id'])
     context['vis_val'] = os.path.join(context['path'], config['val_vis_dir'])

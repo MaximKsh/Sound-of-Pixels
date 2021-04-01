@@ -49,7 +49,7 @@ def build_model(ctx: dict):
     crit = builder.build_criterion(arch=get_ctx(ctx, 'loss'))
     net_wrapper = NetWrapper(nets, crit)
     if get_ctx(ctx, 'device').type != 'cpu':
-        net_wrapper = nn.DataParallel(net_wrapper, device_ids=range(get_ctx(ctx, 'num_gpus')))
+        net_wrapper = nn.DataParallel(net_wrapper, device_ids=get_ctx(ctx, 'gpu'))
         net_wrapper.to(get_ctx(ctx, 'device'))
 
     return net_wrapper

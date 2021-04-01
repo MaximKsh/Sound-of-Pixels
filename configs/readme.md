@@ -18,7 +18,7 @@
 * log_freq - log frequency scale
 
 ### Data related arguments
-* num_gpus - number of gpus to use
+* gpu - list of gpu ids to use
 * batch_size_per_gpu - input batch size
 * workers - number of data loading workers
 * num_val - number of images to evaluate
