@@ -80,7 +80,7 @@ def init_history(ctx: Optional[dict]):
     if ctx and get_ctx(ctx, 'continue_training'):
         suffix_latest = 'latest.pth'
         from_epoch = torch.load('{}/epoch_{}'.format(get_ctx(ctx, 'path'), suffix_latest)) + 1
-        history = torch.load('{}/history_{}'.format(ctx, suffix_latest))
+        history = torch.load('{}/history_{}'.format(get_ctx(ctx, 'path'), suffix_latest))
 
         for step in get_ctx(ctx, 'lr_steps'):
             if step < from_epoch:
