@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 import shutil
+import subprocess
 
 import numpy as np
 import librosa
@@ -228,6 +229,55 @@ def save_video(path, tensor, fps=25):
 
 def save_audio(path, audio_numpy, sr):
     librosa.output.write_wav(path, audio_numpy, sr)
+
+
+def safe_subprocess_call(args, logger):
+    try:
+        return_error = subprocess.check_call(args)
+    except:
+        cmd = ' '.join(args)
+        if logger:
+            logger.exception(cmd)
+        return False
+
+    if return_error != 0:
+        cmd = ' '.join(args)
+        if logger:
+            logger.error('%s return non zero code %d', cmd, return_error)
+        return False
+
+    return True
+
+
+# ffmpeg -i "BhXj3rVWGZ0.mp4" -ar 11025 -ac 1 -f mp3 abc.mp3
+def extract_audio_ffmpeg(input_video, output_filename, start_sec=-1, len_sec=-1, logger=None):
+    args = ['ffmpeg', '-loglevel', 'error']
+    if start_sec >= 0:
+        ss = str(datetime.timedelta(seconds=start_sec))
+        args += ['-ss', ss]
+    args += ['-i', input_video]
+    if len_sec >= 0:
+        to = str(datetime.timedelta(seconds=len_sec))
+        args += ['-to', to]
+
+    args += ['-ar', '11025', '-ac', '1', '-f', 'mp3', output_filename]
+    return safe_subprocess_call(args, logger)
+
+
+# ffmpeg -i "BhXj3rVWGZ0.mp4" -r 8  frames/out-%03d.jpg
+def extract_frames_ffmpeg(input_video, output_frames_path, fps, start_sec=-1, len_sec=-1, logger=None):
+    args = ['ffmpeg', '-loglevel', 'error']
+    if start_sec >= 0:
+        ss = str(datetime.timedelta(seconds=start_sec))
+        args += ['-ss', ss]
+    args += ['-i', input_video, '-s', '224x224']
+    if len_sec >= 0:
+        to = str(datetime.timedelta(seconds=len_sec))
+        args += ['-to', to]
+
+    args += ['-r', str(fps), os.path.join(output_frames_path, '%06d.jpg')]
+    return safe_subprocess_call(args, logger)
+
 
 
 def format_id(config: dict) -> str:

@@ -1,19 +1,20 @@
-import glob
-import logging
-import datetime
-import random
-import subprocess
-import os
 import argparse
+import csv
+import glob
+import json
+import logging
+import multiprocessing as mp
+import os
+import random
 import shutil
 import time
 from functools import partial
 from typing import NamedTuple
-import csv
-import json
-import multiprocessing as mp
+
 import tqdm
 import youtube_dl
+
+from helpers.utils import extract_audio_ffmpeg, extract_frames_ffmpeg
 
 logger = logging.getLogger()
 
@@ -34,52 +35,6 @@ def download_video(videos, output_path):
 
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         ydl.download(videos)
-
-
-def safe_subprocess_call(args):
-    try:
-        return_error = subprocess.check_call(args)
-    except:
-        cmd = ' '.join(args)
-        logger.exception(cmd)
-        return False
-
-    if return_error != 0:
-        cmd = ' '.join(args)
-        logger.error('%s return non zero code %d', cmd, return_error)
-        return False
-
-    return True
-
-
-# ffmpeg -i "BhXj3rVWGZ0.mp4" -ar 11025 -ac 1 -f mp3 abc.mp3
-def extract_audio_ffmpeg(input_video, output_filename, start_sec=-1, len_sec=-1):
-    args = ['ffmpeg', '-loglevel', 'error']
-    if start_sec >= 0:
-        ss = str(datetime.timedelta(seconds=start_sec))
-        args += ['-ss', ss]
-    args += ['-i', input_video]
-    if len_sec >= 0:
-        to = str(datetime.timedelta(seconds=len_sec))
-        args += ['-to', to]
-
-    args += ['-ar', '11025', '-ac', '1', '-f', 'mp3', output_filename]
-    return safe_subprocess_call(args)
-
-
-# ffmpeg -i "BhXj3rVWGZ0.mp4" -r 8  frames/out-%03d.jpg
-def extract_frames_ffmpeg(input_video, output_frames_path, fps, start_sec=-1, len_sec=-1):
-    args = ['ffmpeg', '-loglevel', 'error']
-    if start_sec >= 0:
-        ss = str(datetime.timedelta(seconds=start_sec))
-        args += ['-ss', ss]
-    args += ['-i', input_video, '-s', '224x224']
-    if len_sec >= 0:
-        to = str(datetime.timedelta(seconds=len_sec))
-        args += ['-to', to]
-
-    args += ['-r', str(fps), os.path.join(output_frames_path, '%06d.jpg')]
-    return safe_subprocess_call(args)
 
 
 def clear_artifacts(args):
