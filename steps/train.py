@@ -4,7 +4,7 @@ import time
 import torch
 
 from dataset.music import MUSICMixDataset
-from helpers.utils import AverageMeter, makedirs, get_ctx
+from helpers.utils import AverageMeter, makedirs, get_ctx, get_timestr
 from steps.common import build_model, get_underlying_nets, init_history, adjust_learning_rate
 from steps.evaluate_base import _evaluate
 
@@ -82,7 +82,7 @@ def train_epoch(ctx: dict):
 
         # display
         if i % get_ctx(ctx, 'disp_iter') == 0:
-            print(f'Epoch: [{epoch}][{i}/{get_ctx(ctx, "epoch_iters")}],'
+            print(f'{get_timestr()} Epoch: [{epoch}][{i}/{get_ctx(ctx, "epoch_iters")}],'
                   f' Time: {batch_time.average():.2f}, Data: {data_time.average():.2f}, '
                   f'lr_sound: {get_ctx(ctx, "lr_sound")}, lr_frame: {get_ctx(ctx, "lr_frame")}, '
                   f'lr_synthesizer: {get_ctx(ctx, "lr_synthesizer")}, '

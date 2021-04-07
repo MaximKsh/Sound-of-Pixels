@@ -6,7 +6,7 @@ from mir_eval.separation import bss_eval_sources
 from scipy.io import wavfile
 
 from helpers.utils import makedirs, AverageMeter, istft_reconstruction, magnitude2heatmap, recover_rgb, \
-    save_video, combine_video_audio, get_ctx
+    save_video, combine_video_audio, get_ctx, get_timestr
 from helpers.viz import HTMLVisualizer, plot_loss_metrics
 from steps.common import unwarp_log_scale, detach_mask
 
@@ -188,7 +188,7 @@ def output_visuals(vis_rows, batch_data, outputs, ctx):
 
 def _evaluate(ctx: dict):
     epoch = get_ctx(ctx, 'epoch')
-    print(f'Evaluating at {epoch} epochs...')
+    print(f'{get_timestr()} Evaluating at {epoch} epochs...')
     makedirs(get_ctx(ctx, 'vis_val'), remove=True)
 
     net_wrapper = get_ctx(ctx, 'net_wrapper')
@@ -217,7 +217,7 @@ def _evaluate(ctx: dict):
         err = err.mean()
 
         loss_meter.update(err.item())
-        print(f'[Eval] iter {i}, loss: {err.item():.4f}')
+        print(f'{get_timestr()} [Eval] iter {i}, loss: {err.item():.4f}')
 
         # calculate metrics
         sdr_mix, sdr, sir, sar = calc_metrics(batch_data, outputs, ctx)
@@ -230,7 +230,7 @@ def _evaluate(ctx: dict):
         if len(vis_rows) < get_ctx(ctx, 'num_vis'):
             output_visuals(vis_rows, batch_data, outputs, ctx)
 
-    print(f'[Eval Summary] Epoch: {epoch}, Loss: {loss_meter.average():.4f}, '
+    print(f'{get_timestr()} [Eval Summary] Epoch: {epoch}, Loss: {loss_meter.average():.4f}, '
           f'SDR_mixture: {sdr_mix_meter.average():.4f}, SDR: {sdr_meter.average():.4f}, '
           f'SIR: {sir_meter.average():.4f}, SAR: {sar_meter.average():.4f}')
 
@@ -241,11 +241,11 @@ def _evaluate(ctx: dict):
     history['val']['sir'].append(sir_meter.average())
     history['val']['sar'].append(sar_meter.average())
 
-    print('Plotting html for visualization...')
+    print(f'{get_timestr()} Plotting html for visualization...')
     visualizer.add_rows(vis_rows)
     visualizer.write_html()
 
     # Plot figure
     if epoch > 0:
-        print('Plotting figures...')
+        print(f'{get_timestr()} Plotting figures...')
         plot_loss_metrics(get_ctx(ctx, 'path'), history)

@@ -1,4 +1,4 @@
-import copy
+import datetime
 import json
 import os
 import shutil
@@ -313,3 +313,7 @@ def get_ctx(context: dict, key: str):
         return context[key]
     except KeyError:
         return context['config'][key]
+
+
+def get_timestr() -> str:
+    return datetime.datetime.now().strftime("%m/%d %H:%M:%S")
