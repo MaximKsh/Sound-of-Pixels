@@ -33,7 +33,12 @@ class NetWrapper(nn.Module):
         self.net_sound, self.net_frame, self.net_synthesizer = nets
         self.crit = crit
 
-    def forward(self, batch_data, ctx):
+    def forward(self, batch_data, ctx, pixelwise=False):
+        if pixelwise:
+            return self._forward_pixelwise(batch_data, ctx)
+        return self._forward(batch_data, ctx)
+
+    def _forward(self, batch_data, ctx):
         mag_mix = batch_data['mag_mix']
         mags = batch_data['mags']
         frames = batch_data['frames']
@@ -95,7 +100,7 @@ class NetWrapper(nn.Module):
             {'pred_masks': pred_masks, 'gt_masks': gt_masks,
              'mag_mix': mag_mix, 'mags': mags, 'weight': weight}
 
-    def forward_pixelwise(self, batch_data, ctx):
+    def _forward_pixelwise(self, batch_data, ctx):
         mag_mix = batch_data['mag_mix']
         frames = batch_data['frames']
         mag_mix = mag_mix + 1e-10

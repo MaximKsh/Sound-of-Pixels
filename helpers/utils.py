@@ -279,7 +279,6 @@ def extract_frames_ffmpeg(input_video, output_frames_path, fps, start_sec=-1, le
     return safe_subprocess_call(args, logger)
 
 
-
 def format_id(config: dict) -> str:
     id_ = config['id']
 

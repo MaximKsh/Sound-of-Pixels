@@ -29,7 +29,7 @@ def predict_masks(audio_fname, frame_low_path):
 
     with torch.no_grad():
         data = next(iter(loader))
-        output = ctx['net_wrapper'].forward_pixelwise(data, ctx)
+        output = ctx['net_wrapper'].forward(data, ctx, pixelwise=True)
     return data, output
 
 

@@ -49,9 +49,8 @@ def build_model(ctx: dict):
     crit = builder.build_criterion(arch=get_ctx(ctx, 'loss'))
     net_wrapper = NetWrapper(nets, crit)
     if get_ctx(ctx, 'device').type != 'cpu':
-        if len(get_ctx(ctx, 'gpu')) > 1:
-            net_wrapper = nn.DataParallel(net_wrapper, device_ids=get_ctx(ctx, 'gpu'))
-        net_wrapper.to(get_ctx(ctx, 'device'))
+        net_wrapper = nn.DataParallel(net_wrapper, device_ids=get_ctx(ctx, 'gpu'))
+        # net_wrapper.to(get_ctx(ctx, 'device'))
 
     return net_wrapper
 
@@ -116,3 +115,10 @@ def detach_mask(ctx, mask, binary):
             mask[n] = (mask[n] > get_ctx(ctx, 'mask_thres')).astype(np.float32)
 
     return mask
+
+
+def to_device(ctx, data):
+    if get_ctx(ctx, 'device').type != 'cpu' and len(get_ctx(ctx, 'gpu')) == 1:
+        for k in data:
+            if isinstance(data[k], torch.Tensor):
+                data[k] = data[k].to(get_ctx(ctx, 'device'))

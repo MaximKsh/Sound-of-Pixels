@@ -103,6 +103,6 @@ def regions(ctx: dict):
     cnt = 0
     with torch.no_grad():
         for data in tqdm(loader):
-            output = ctx['net_wrapper'].forward_pixelwise(data, ctx)
+            output = ctx['net_wrapper'].forward(data, ctx, pixelwise=True)
             output_predictions(ctx, data, output)
             cnt += len(data['audios'][0])
