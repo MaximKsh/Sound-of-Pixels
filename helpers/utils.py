@@ -322,7 +322,7 @@ def read_config(path: str) -> dict:
 def create_context(config: dict) -> dict:
     context = {
         'config': config,
-        'batch_size': min(1, len(config['gpu'])) * config['batch_size_per_gpu'],
+        'batch_size': max(1, len(config['gpu'])) * config['batch_size_per_gpu'],
         'id': format_id(config)
     }
 

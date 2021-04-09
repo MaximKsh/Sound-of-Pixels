@@ -19,8 +19,6 @@ def output_predictions(ctx, data, outputs):
     frames = data['frames']
     infos = data['infos']
     pred_masks_ = outputs['pred_masks']
-    mag_mix_ = outputs['processed_mag_mix']
-    channels_ = outputs['feat_frames_channels']
 
     bs, im_h, im_w, _, _ = pred_masks_.shape
 
@@ -35,7 +33,6 @@ def output_predictions(ctx, data, outputs):
     pred_masks_linear = detach_mask(ctx, [pred_masks_linear], get_ctx(ctx, 'binary_mask'))[0]
     pred_masks_ = detach_mask(ctx, [pred_masks_], get_ctx(ctx, 'binary_mask'))[0]
     mag_mix = mag_mix.numpy()
-    mag_mix_ = mag_mix_.detach().cpu().numpy()
     phase_mix = phase_mix.numpy()
     frames = frames[0]
 
@@ -89,7 +86,6 @@ def output_predictions(ctx, data, outputs):
 
         with open(os.path.join(sbr_folder, 'sbr.html'), 'w') as text_file:
             text_file.write(sbr_html)
-
 
 
 def regions(ctx: dict):
