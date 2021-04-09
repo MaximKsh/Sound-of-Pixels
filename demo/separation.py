@@ -9,7 +9,6 @@ import numpy as np
 import torch
 import torchvision
 from scipy.io import wavfile
-from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 import torchvision.transforms as T
 from dataset.music import MUSICMixDataset
 from helpers.utils import create_context, read_config, get_ctx, extract_frames_ffmpeg, extract_audio_ffmpeg, \
@@ -173,6 +172,8 @@ def main():
         number = last_frame_number(frame_out_path)
         box_np = box.cpu().numpy()
         avg_mask = get_average_mask(box_np, mask_boxes, pred_masks_linear[0], cell_area, 512, 256, grid_width, grid_height)
+        if get_ctx(ctx, 'binary_mask'):
+            avg_mask = (avg_mask > get_ctx(ctx, 'mask_thres')).astype(np.float32)
 
         pred_mag = mag_mix[0, 0] * avg_mask
         preds_wav = istft_reconstruction(pred_mag, phase_mix[0, 0], hop_length=get_ctx(ctx, 'stft_hop'))
