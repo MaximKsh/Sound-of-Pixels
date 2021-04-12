@@ -21,7 +21,7 @@ def build_model(ctx: dict):
     elif isinstance(get_ctx(ctx, 'continue_training'), int):
         ep = get_ctx(ctx, 'continue_training')
         weights_sound = get_ctx(ctx, f'weights_sound_{ep}')
-        weights_frame = get_ctx(ctx, f'weights_frame_latest_{ep}')
+        weights_frame = get_ctx(ctx, f'weights_frame_{ep}')
         weights_synthesizer = get_ctx(ctx, f'weights_synthesizer_{ep}')
     elif get_ctx(ctx, 'finetune'):
         weights_sound = get_ctx(ctx, 'weights_sound_finetune')
@@ -91,7 +91,8 @@ def init_history(ctx: Optional[dict]):
         if isinstance(continue_training, int):
             from_epoch = get_ctx(ctx, 'continue_training')
             for k in history:
-                history[k] = history[k][:from_epoch]
+                for k1 in history[k]:
+                    history[k][k1] = history[k][k1][:from_epoch]
 
         for step in get_ctx(ctx, 'lr_steps'):
             if step < from_epoch:
