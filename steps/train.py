@@ -33,7 +33,7 @@ def checkpoint(ctx: dict):
     save_nets(ctx, suffix_latest)
 
     cur_metrics = (history['val']['sdr'][-1] + history['val']['sir'][-1] + history['val']['sar'][-1]) / 3
-    if cur_metrics < get_ctx(ctx, 'best_metrics') and epoch % get_ctx(ctx, 'eval_epoch') == 0:
+    if cur_metrics > get_ctx(ctx, 'best_metrics') and epoch % get_ctx(ctx, 'eval_epoch') == 0:
         print(f'Best model, epoch = {epoch}, mean metrics = {cur_metrics}, prev best = {get_ctx(ctx, "best_metrics")}')
         ctx['best_metrics'] = cur_metrics
         save_nets(ctx, suffix_best)
