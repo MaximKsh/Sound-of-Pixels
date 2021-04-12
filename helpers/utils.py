@@ -360,6 +360,7 @@ def create_context(config: dict) -> dict:
     context['lr_synthesizer'] = config['lr_synthesizer']
 
     context['best_err'] = float('inf')
+    context['best_metrics'] = 0.0
     return context
 
 
