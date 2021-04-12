@@ -1,11 +1,11 @@
 import os
 import glob
 import argparse
-import random
 import fnmatch
 import numpy as np
 from tqdm import tqdm
 from pathlib import Path
+import csv
 
 
 def find_recursive(root_dir, ext='.mp3'):
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', default=42, type=int, help='Random seed')
     args = parser.parse_args()
 
-    random.seed(args.seed)
+    np.random.seed(args.seed)
     root_audio = os.path.join(args.input_root, 'audio')
     root_frame = os.path.join(args.input_root, 'frames')
     output_path = f'data-{args.data_key}'
@@ -40,10 +40,12 @@ if __name__ == '__main__':
     print('Audio root:', root_audio)
     print('Frames root:', root_frame)
     print('Output path:', output_path)
+    Path(output_path).mkdir(parents=True, exist_ok=True)
 
     # find all audio/frames pairs
     infos = []
     audio_files = find_recursive(root_audio, ext='.mp3')
+    audio_files = sorted(audio_files)
     print('Audio files found: ', len(audio_files))
     print('Matching frames...')
     for audio_path in tqdm(audio_files):
@@ -51,13 +53,18 @@ if __name__ == '__main__':
             .replace('.mp3', '')
         frame_files = glob.glob(frame_path + '/*.jpg')
         if args.min_frames == 0 or len(frame_files) > args.min_frames:
-            infos.append((f'"{audio_path}"', f'"{frame_path}"', str(len(frame_files))))
+            infos.append((audio_path, frame_path, str(len(frame_files))))
     print('{} audio/frames pairs found.'.format(len(infos)))
+    with open(os.path.join(output_path, 'all.csv'), 'w') as f:
+        writer = csv.writer(f)
+        for item in infos:
+            writer.writerow(item)
 
     # split train/val
     n_val = int(len(infos) * args.val_ratio)
     n_test = int(len(infos) * args.test_ratio)
-    random.shuffle(infos)
+    infos = np.array(infos)
+    np.random.shuffle(infos)
 
     valset_indexes = set()
     testset_indexes = set()
@@ -68,29 +75,27 @@ if __name__ == '__main__':
         instrument = os.path.split(os.path.split(audio_path)[0])[1]
         if (not args.check_duets or ' ' in instrument) and len(testset_indexes) < n_test:
             testset_indexes.add(i)
-        if (not args.check_duets or ' ' not in instrument) and instrument != 'silence' and len(valset_indexes) < n_val:
+        elif (not args.check_duets or ' ' not in instrument) and instrument != 'silence' and len(valset_indexes) < n_val:
             valset_indexes.add(i)
         i += 1
-
-    infos = np.array([','.join(x) for x in infos])
 
     testset = infos[list(testset_indexes)]
     valset = infos[list(valset_indexes)]
     trainset = infos[list(set(range(len(infos))) - valset_indexes - testset_indexes)]
 
-    random.shuffle(testset)
-    random.shuffle(valset)
-    random.shuffle(trainset)
+    np.random.shuffle(testset)
+    np.random.shuffle(valset)
+    np.random.shuffle(trainset)
     print(f'Trainset size: {len(trainset)}, Valset size: {len(valset)}, Testset size: {len(testset)}')
 
-    Path(output_path).mkdir(parents=True, exist_ok=True)
     print('Writing output files...')
     for name, subset in zip(['train', 'val', 'test'], [trainset, valset, testset]):
         filename = '{}.csv'.format(os.path.join(output_path, name))
         print(f'Writing to {filename}...')
         with open(filename, 'w') as f:
+            writer = csv.writer(f)
             for item in tqdm(subset):
-                f.write(item + '\n')
+                writer.writerow(item)
         print('{} items saved to {}.'.format(len(subset), filename))
 
     print('Done!')
