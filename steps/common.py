@@ -14,10 +14,15 @@ def build_model(ctx: dict):
         weights_sound = get_ctx(ctx, 'weights_sound_best')
         weights_frame = get_ctx(ctx, 'weights_frame_best')
         weights_synthesizer = get_ctx(ctx, 'weights_synthesizer_best')
-    elif get_ctx(ctx, 'continue_training'):
+    elif get_ctx(ctx, 'continue_training') == 'latest':
         weights_sound = get_ctx(ctx, 'weights_sound_latest')
         weights_frame = get_ctx(ctx, 'weights_frame_latest')
         weights_synthesizer = get_ctx(ctx, 'weights_synthesizer_latest')
+    elif isinstance(get_ctx(ctx, 'continue_training'), int):
+        ep = get_ctx(ctx, 'continue_training')
+        weights_sound = get_ctx(ctx, f'weights_sound_{ep}')
+        weights_frame = get_ctx(ctx, f'weights_frame_latest_{ep}')
+        weights_synthesizer = get_ctx(ctx, f'weights_synthesizer_{ep}')
     elif get_ctx(ctx, 'finetune'):
         weights_sound = get_ctx(ctx, 'weights_sound_finetune')
         weights_frame = get_ctx(ctx, 'weights_frame_finetune')
@@ -77,10 +82,16 @@ def init_history(ctx: Optional[dict]):
         'train': {'epoch': [], 'err': []},
         'val': {'epoch': [], 'err': [], 'sdr': [], 'sir': [], 'sar': []}}
 
-    if ctx and get_ctx(ctx, 'continue_training'):
+    continue_training = get_ctx(ctx, 'continue_training')
+    if ctx and continue_training == 'latest' or isinstance(continue_training, int):
         suffix_latest = 'latest.pth'
         from_epoch = torch.load('{}/epoch_{}'.format(get_ctx(ctx, 'path'), suffix_latest)) + 1
         history = torch.load('{}/history_{}'.format(get_ctx(ctx, 'path'), suffix_latest))
+
+        if isinstance(continue_training, int):
+            from_epoch = get_ctx(ctx, 'continue_training')
+            for k in history:
+                history[k] = history[k][:from_epoch]
 
         for step in get_ctx(ctx, 'lr_steps'):
             if step < from_epoch:

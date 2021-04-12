@@ -340,6 +340,12 @@ def create_context(config: dict) -> dict:
     context['weights_frame_latest'] = os.path.join(context['path'], 'frame_latest.pth')
     context['weights_synthesizer_latest'] = os.path.join(context['path'], 'synthesizer_latest.pth')
 
+    if isinstance(config['continue_training'], int):
+        ep = config['continue_training']
+        context[f'weights_sound_{ep}'] = os.path.join(context['path'], f'sound_{ep}.pth')
+        context[f'weights_frame_{ep}'] = os.path.join(context['path'], f'frame_{ep}.pth')
+        context[f'weights_synthesizer_{ep}'] = os.path.join(context['path'], f'synthesizer_{ep}.pth')
+
     if config['finetune']:
         context['weights_sound_finetune'] = os.path.join(config['finetune'], 'sound_latest.pth')
         context['weights_frame_finetune'] = os.path.join(config['path'], 'frame_latest.pth')

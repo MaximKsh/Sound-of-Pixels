@@ -127,7 +127,7 @@ def train(ctx: dict):
         drop_last=False)
 
     ctx['history'], from_epoch = init_history(ctx)
-    if not get_ctx(ctx, 'continue_training'):
+    if get_ctx(ctx, 'continue_training') == '':
         makedirs(get_ctx(ctx, 'path'), remove=True)
 
     for epoch in range(from_epoch, get_ctx(ctx, 'num_epoch') + 1):
