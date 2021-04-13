@@ -82,21 +82,24 @@ def init_history(ctx: Optional[dict]):
         'train': {'epoch': [], 'err': []},
         'val': {'epoch': [], 'err': [], 'sdr': [], 'sir': [], 'sar': []}}
 
-    continue_training = get_ctx(ctx, 'continue_training')
-    if ctx and continue_training == 'latest' or isinstance(continue_training, int):
-        suffix_latest = 'latest.pth'
-        from_epoch = torch.load('{}/epoch_{}'.format(get_ctx(ctx, 'path'), suffix_latest)) + 1
-        history = torch.load('{}/history_{}'.format(get_ctx(ctx, 'path'), suffix_latest))
+    if ctx:
+        continue_training = get_ctx(ctx, 'continue_training')
+        if continue_training == 'latest' or isinstance(continue_training, int):
+            suffix_latest = 'latest.pth'
+            from_epoch = torch.load('{}/epoch_{}'.format(get_ctx(ctx, 'path'), suffix_latest)) + 1
+            history = torch.load('{}/history_{}'.format(get_ctx(ctx, 'path'), suffix_latest))
 
-        if isinstance(continue_training, int):
-            from_epoch = get_ctx(ctx, 'continue_training')
-            for k in history:
-                for k1 in history[k]:
-                    history[k][k1] = history[k][k1][:from_epoch]
+            if isinstance(continue_training, int):
+                from_epoch = get_ctx(ctx, 'continue_training')
+                for k in history:
+                    for k1 in history[k]:
+                        history[k][k1] = history[k][k1][:from_epoch]
 
-        for step in get_ctx(ctx, 'lr_steps'):
-            if step < from_epoch:
-                adjust_learning_rate(ctx)
+            for step in get_ctx(ctx, 'lr_steps'):
+                if step < from_epoch:
+                    adjust_learning_rate(ctx)
+        else:
+            raise ValueError(f'invalid value in continue training {continue_training}')
     else:
         from_epoch = 0
 
