@@ -81,7 +81,7 @@ def init_history(ctx: Optional[dict]):
     history = {
         'train': {'epoch': [], 'err': []},
         'val': {'epoch': [], 'err': [], 'sdr': [], 'sir': [], 'sar': []}}
-
+    from_epoch = 0
     if ctx:
         continue_training = get_ctx(ctx, 'continue_training')
         if continue_training == 'latest' or isinstance(continue_training, int):
@@ -98,10 +98,8 @@ def init_history(ctx: Optional[dict]):
             for step in get_ctx(ctx, 'lr_steps'):
                 if step < from_epoch:
                     adjust_learning_rate(ctx)
-        else:
+        elif continue_training != "":
             raise ValueError(f'invalid value in continue training {continue_training}')
-    else:
-        from_epoch = 0
 
     return history, from_epoch
 

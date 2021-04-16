@@ -1,5 +1,5 @@
 {
-  "id": "1.2",
+  "id": "3.2",
   "list_train": "data-solo11+duet/train.csv",
   "list_val": "data-solo11+duet/val.csv",
   "list_test": "data-solo11+duet/test.csv",
@@ -11,6 +11,7 @@
   "num_channels": 16,
   "num_frames": 3,
   "stride_frames": 24,
+  "binary_mask": 0,
   "loss": "l2",
     
     
