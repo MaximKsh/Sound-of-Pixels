@@ -1,4 +1,5 @@
 {
+  "id": "MUSIC",
   "list_train": "data-music/train.csv",
   "list_val": "data-music/val.csv",
   "list_test": "data-music/test.csv",
@@ -14,10 +15,11 @@
   "num_channels": 32,
   "binary_mask": 1,
   "loss": "bce",
-  "weighted_loss": 1,
   "num_mix": 2,
   "log_freq": 1,
   "num_frames": 3,
   "stride_frames": 24,
-  "frame_rate": 8
+  "frame_rate": 8,
+
+  "lr_steps": [40, 80]
 }

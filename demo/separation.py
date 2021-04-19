@@ -105,6 +105,7 @@ def get_average_mask(box_np, mask_boxes, masks_np, cell_area, mask_width, mask_h
             intersection_coef = bb_intersection(mask_boxes[mask_box_x][mask_box_y], box_np) / cell_area
             if intersection_coef != 0:
                 aggregated_mask += masks_np[mask_box_x, mask_box_y] * intersection_coef
+                # aggregated_mask += masks_np[grid_width - mask_box_x - 1, mask_box_y] * intersection_coef
                 d += intersection_coef
     aggregated_mask /= d
     return aggregated_mask
@@ -118,7 +119,7 @@ def last_frame_number(path):
 
 def resize_to_aud_len(wav):
     if get_ctx(ctx, 'aud_len') > wav.shape[0]:
-     return np.pad(wav, (0, get_ctx(ctx, 'aud_len') - wav.shape[0]))
+        return np.pad(wav, (0, get_ctx(ctx, 'aud_len') - wav.shape[0]))
     elif get_ctx(ctx, 'aud_len') < wav.shape[0]:
         return wav[:get_ctx(ctx, 'aud_len')]
     return wav
