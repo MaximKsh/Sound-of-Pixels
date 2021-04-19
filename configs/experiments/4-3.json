@@ -1,5 +1,5 @@
 {
-  "id": "1.1",
+  "id": "4.3",
   "list_train": "data-solo11+duet/train.csv",
   "list_val": "data-solo11+duet/val.csv",
   "list_test": "data-solo11+duet/test.csv",
