@@ -1,0 +1,21 @@
+{
+  "id": "5.1",
+  "list_train": "data-vggsound/train.csv",
+  "list_val": "data-vggsound/val.csv",
+  "list_test": "data-vggsound/test.csv",
+  "list_regions": "data-vggsound/test.csv",
+
+  "img_activation": "tanh",
+
+  "gpu": [0],
+  "lr_steps": [40, 80],
+    
+  "num_channels": 16,
+  "num_frames": 3,
+  "stride_frames": 24,
+    
+  "batch_size_per_gpu": 20,
+  "workers": 4,
+  "disp_iter": 2000,
+  "checkpoint_epoch": 10
+}
