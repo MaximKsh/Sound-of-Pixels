@@ -35,7 +35,7 @@ class MUSICMixDataset(BaseDataset):
         for n, infoN in enumerate(infos):
             path_audioN, path_frameN, count_framesN = infoN
             
-            if self.split == 'train' and int(count_framesN) > 20: # vggsound hack
+            if self.split == 'train' and int(count_framesN) > 20:  # vggsound hack
                 # random, not to sample start and end n-frames
                 center_frameN = random.randint(
                     idx_margin+1, int(count_framesN)-idx_margin)
@@ -51,7 +51,6 @@ class MUSICMixDataset(BaseDataset):
                         path_frameN,
                         '{:06d}.jpg'.format(center_frameN + idx_offset)))
             path_audios[n] = path_audioN
-
 
         # load frames and audios, STFT
         try:

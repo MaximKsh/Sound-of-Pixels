@@ -8,6 +8,7 @@ from steps.test import test
 from steps.evaluate import evaluate
 from steps.train import train
 from steps.regions import regions
+from steps.lr_range_test import lr_range_test
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -34,5 +35,7 @@ if __name__ == '__main__':
         test(ctx)
     elif args.mode == 'regions':
         regions(ctx)
+    elif args.mode == 'lr_range_test':
+        lr_range_test(ctx)
     else:
         raise RuntimeError(f'Unsupported mode {args.mode}, please use train/eval/test/regions')
