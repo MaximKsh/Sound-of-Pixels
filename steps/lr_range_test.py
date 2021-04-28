@@ -41,7 +41,7 @@ def lr_range_test_for_part(ctx: dict, groups: List[int]):
     optimizer = get_ctx(ctx, 'optimizer')
     loader = get_ctx(ctx, 'loader_train')
 
-    total = 10
+    total = 1000
     min_lr = 1e-10
     max_lr = 1e1
     smooth_f = 0.05
@@ -67,7 +67,7 @@ def lr_range_test_for_part(ctx: dict, groups: List[int]):
         rates.append(lr)
         losses.append(loss.item())
 
-    return rates, losses
+    return np.array(rates), np.array(losses)
 
 
 def lr_range_test(ctx: dict):
@@ -82,9 +82,9 @@ def lr_range_test(ctx: dict):
     plt.subplot(3, 1, 1)
     plt.xscale('log')
     plt.title('Audio')
-    plt.plot(rates, losses)
-    plt.plot([rates[best], rates[best]], [0, 10])
-    plt.plot([rates[best] / 10, rates[best] / 10], [0, 10])
+    q = np.quantile(rates, 0.9)
+    idx = np.argwhere(rates < q)
+    plt.plot(rates[idx], losses[idx])
 
     print(f'Synthesizer net')
     rates, losses = lr_range_test_for_part(ctx, [1])
@@ -95,9 +95,9 @@ def lr_range_test(ctx: dict):
     plt.subplot(3, 1, 2)
     plt.xscale('log')
     plt.title('Synthesizer')
-    plt.plot(rates, losses)
-    plt.plot([rates[best], rates[best]], [0, 10])
-    plt.plot([rates[best] / 10, rates[best] / 10], [0, 10])
+    q = np.quantile(rates, 0.9)
+    idx = np.argwhere(rates < q)
+    plt.plot(rates[idx], losses[idx])
 
     print(f'Frame net')
     rates, losses = lr_range_test_for_part(ctx, [2, 3])
@@ -108,7 +108,8 @@ def lr_range_test(ctx: dict):
     plt.subplot(3, 1, 3)
     plt.xscale('log')
     plt.title('Frame')
-    plt.plot(rates, losses)
-    plt.plot([rates[best], rates[best]], [0, 10])
-    plt.plot([rates[best] / 10, rates[best] / 10], [0, 10])
+    q = np.quantile(rates, 0.9)
+    idx = np.argwhere(rates < q)
+    plt.plot(rates[idx], losses[idx])
+
     plt.savefig('lr_rate_test.png')

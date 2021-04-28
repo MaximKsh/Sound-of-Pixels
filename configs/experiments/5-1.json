@@ -9,6 +9,9 @@
 
   "gpu": [0],
   "lr_steps": [40, 80],
+  "lr_sound": 1e-2,
+  "lr_synthesizer": 1e-2,
+  "lr_frame": 1e-3,
     
   "num_channels": 16,
   "num_frames": 3,
