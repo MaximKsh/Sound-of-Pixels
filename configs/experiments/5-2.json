@@ -21,5 +21,5 @@
   "batch_size_per_gpu": 20,
   "workers": 8,
   "disp_iter": 2000,
-  "checkpoint_epoch": 10
+  "checkpoint_epoch": 5
 }
