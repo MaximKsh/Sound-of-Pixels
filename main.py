@@ -12,7 +12,7 @@ from steps.lr_range_test import lr_range_test
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('mode', help='train/eval/test/regions')
+    parser.add_argument('mode', help='train/eval/regions/lr_range_test')
     parser.add_argument('--config', default='', help='Configuration in JSON file')
     args = parser.parse_args()
 
@@ -31,11 +31,11 @@ if __name__ == '__main__':
         train(ctx)
     elif args.mode == 'eval':
         evaluate(ctx)
-    elif args.mode == 'test':
-        test(ctx)
+    # elif args.mode == 'test':
+    #     test(ctx)
     elif args.mode == 'regions':
         regions(ctx)
     elif args.mode == 'lr_range_test':
         lr_range_test(ctx)
     else:
-        raise RuntimeError(f'Unsupported mode {args.mode}, please use train/eval/test/regions')
+        raise RuntimeError(f'Unsupported mode {args.mode}, please use train/eval/regions/lr_range_test')
