@@ -55,5 +55,6 @@
 
   "continue_training": "",
   "finetune": null,
+  "finetune_checkpoint": "latest",
   "checkpoint_epoch": null
 }
