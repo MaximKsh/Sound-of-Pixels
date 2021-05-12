@@ -349,8 +349,8 @@ def create_context(config: dict) -> dict:
     if config['finetune']:
         checkpoint = config['finetune_checkpoint']
         context['weights_sound_finetune'] = os.path.join(config['finetune'], f'sound_{checkpoint}.pth')
-        context['weights_frame_finetune'] = os.path.join(config['path'], f'frame_{checkpoint}.pth')
-        context['weights_synthesizer_finetune'] = os.path.join(config['path'], f'synthesizer_{checkpoint}.pth')
+        context['weights_frame_finetune'] = os.path.join(config['finetune'], f'frame_{checkpoint}.pth')
+        context['weights_synthesizer_finetune'] = os.path.join(config['finetune'], f'synthesizer_{checkpoint}.pth')
 
     context['weights_sound_best'] = os.path.join(context['path'], 'sound_best.pth')
     context['weights_frame_best'] = os.path.join(context['path'], 'frame_best.pth')
